@@ -1,0 +1,58 @@
+# Ambiente de desenvolvimento local.
+# O código é montado via volume, então alterações refletem sem rebuild.
+
+x-php: &php
+  image: serversideup/php:8.4-fpm-nginx
+  volumes:
+    - .:/var/www/html
+  depends_on:
+    mysql:
+      condition: service_healthy
+
+services:
+  app:
+    <<: *php
+    ports:
+      - "${APP_PORT:-8000}:8080"
+
+  # Mesmo código e imagem do app, rodando apenas o worker da fila
+  queue:
+    <<: *php
+    command: ["php", "/var/www/html/artisan", "queue:work"]
+    stop_signal: SIGTERM
+    healthcheck:
+      test: ["CMD", "healthcheck-queue"]
+      start_period: 10s
+
+  vite:
+    image: node:24-alpine
+    working_dir: /app
+    command: sh -c "npm install && npm run dev"
+    ports:
+      - "${VITE_PORT:-5173}:5173"
+    volumes:
+      - .:/app
+      # node_modules isolado no container: dependências nativas (Tailwind, Rollup) são compiladas para Linux
+      - node-modules:/app/node_modules
+
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "${FORWARD_DB_PORT:-3307}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./docker/mysql/create-testing-database.sh:/docker-entrypoint-initdb.d/10-create-testing-database.sh
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${DB_ROOT_PASSWORD:-root}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  mysql-data:
+  node-modules:
