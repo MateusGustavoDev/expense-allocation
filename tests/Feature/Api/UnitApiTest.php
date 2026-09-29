@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Models\Company;
+use App\Models\ExpenseAllocation;
 use App\Models\Unit;
 
 it('creates a unit deriving the slug from its name', function () {
@@ -83,6 +84,16 @@ it('updates a unit keeping its own slug', function () {
         ->assertOk()
         ->assertJsonPath('data.name', 'Novo nome')
         ->assertJsonPath('data.slug', 'unidade-a');
+});
+
+it('refuses to delete a unit that has allocated expenses', function () {
+    $unit = ExpenseAllocation::factory()->create()->unit;
+
+    $this->deleteJson("/api/units/{$unit->id}")
+        ->assertConflict()
+        ->assertJsonPath('message', 'Não é possível excluir uma unidade com despesas rateadas.');
+
+    expect(Unit::find($unit->id))->not->toBeNull();
 });
 
 it('deletes a unit', function () {
