@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\SquishesInput;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 final class UnitRequest extends FormRequest
 {
+    use SquishesInput;
+
     /**
      * @return array<string, array<int, ValidationRule|string|\Stringable>>
      */
@@ -31,6 +34,8 @@ final class UnitRequest extends FormRequest
     // Slug é opcional na entrada: quando ausente, é derivado do nome. Em ambos os casos é normalizado.
     protected function prepareForValidation(): void
     {
+        $this->squish('name');
+
         $source = $this->filled('slug') ? $this->string('slug') : $this->string('name');
 
         if ($source->isNotEmpty()) {

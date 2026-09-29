@@ -14,6 +14,15 @@ it('creates a unit deriving the slug from its name', function () {
         ->assertJsonPath('data.company.id', $company->id);
 });
 
+it('collapses repeated whitespace in the unit name', function () {
+    $company = Company::factory()->create();
+
+    $this->postJson('/api/units', ['company_id' => $company->id, 'name' => ' Unidade    Norte '])
+        ->assertCreated()
+        ->assertJsonPath('data.name', 'Unidade Norte')
+        ->assertJsonPath('data.slug', 'unidade-norte');
+});
+
 it('normalizes an explicit slug', function () {
     $company = Company::factory()->create();
 
