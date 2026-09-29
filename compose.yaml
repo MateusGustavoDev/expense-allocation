@@ -2,7 +2,10 @@
 # O código é montado via volume, então alterações refletem sem rebuild.
 
 x-php: &php
-  image: serversideup/php:8.4-fpm-nginx
+  build:
+    context: .
+    target: base
+  image: expense-allocation-php
   volumes:
     - .:/var/www/html
   depends_on:
