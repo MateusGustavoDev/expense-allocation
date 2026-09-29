@@ -117,7 +117,7 @@ tests/
 | Rotas da API           | `kebab-case`, plural             | `/api/expenses`, `/api/reports/unit-totals` |
 | Blade views/components | `kebab-case`                     | `expense-form.blade.php`, `<x-ui.button>`   |
 | Controllers            | `{Resource}Controller`           | `ExpenseController`                         |
-| Form Requests          | `{Action}{Resource}Request`      | `StoreExpenseRequest`                       |
+| Form Requests          | `{Resource}Request` se store e update têm as mesmas regras; senão `{Action}{Resource}Request` | `UnitRequest`, `StoreExpenseRequest` |
 | API Resources          | `{Resource}Resource`             | `ExpenseResource`                           |
 | Jobs                   | `{Verbo}{Coisa}Job`              | `ConvertExpenseCurrencyJob`                 |
 | Actions                | Verbo + substantivo              | `ImportExpensesFromCsv`                     |
@@ -207,16 +207,16 @@ Todo payload e toda resposta usam **`snake_case`** — padrão nativo do Laravel
 - Chaves estrangeiras com `constrained()` e comportamento de delete explícito (`restrictOnDelete()` para unidades com despesas).
 - Índices em colunas usadas em filtros (`expenses.date`, `expense_allocations.unit_id`).
 - Enums nativos do PHP com `casts()` no model.
-- `$fillable` explícito em todo model. Nunca `$guarded = []`.
-- Relacionamentos com tipo de retorno (`: HasMany`, `: BelongsTo`).
-- Evite N+1: use `with()` ao carregar relacionamentos em listagens. Ative `Model::preventLazyLoading()` fora de produção.
+- Campos preenchíveis declarados com o atributo `#[Fillable([...])]` (Laravel 13). Nunca `#[Unguarded]` ou `$guarded = []`.
+- Relacionamentos com tipo de retorno e generics para o Larastan (`@return HasMany<Unit, $this>`).
+- Evite N+1: use `with()` ao carregar relacionamentos em listagens. `Model::shouldBeStrict()` está ativo fora de produção e lança exceção em lazy loading.
 
 ```php
+#[Fillable(['description', 'supplier', 'date', 'amount_cents', 'currency'])]
 final class Expense extends Model
 {
+    /** @use HasFactory<ExpenseFactory> */
     use HasFactory;
-
-    protected $fillable = ['description', 'supplier', 'date', 'amount_cents', 'currency'];
 
     protected function casts(): array
     {
@@ -227,6 +227,9 @@ final class Expense extends Model
         ];
     }
 
+    /**
+     * @return HasMany<ExpenseAllocation, $this>
+     */
     public function allocations(): HasMany
     {
         return $this->hasMany(ExpenseAllocation::class);
@@ -236,7 +239,12 @@ final class Expense extends Model
 
 ### Controllers
 
-Controllers são finos: recebem o Form Request, chamam a Action e retornam o Resource. Sem query, sem regra, sem `try/catch` de domínio.
+Controllers são finos: recebem o Form Request, chamam a Action e retornam o Resource. Sem regra de negócio, sem `try/catch` de domínio.
+
+- **CRUD simples** (empresas, unidades) usa Eloquent direto no controller (`Company::create($request->validated())`). Criar uma Action que só repassa para o model é indireção sem ganho.
+- **Actions** entram quando há regra de negócio (rateio, conversão, importação, relatório) ou quando a mesma operação é chamada por mais de um ponto de entrada (API, Livewire, CSV).
+- Rotas com `Route::apiResource()` e route model binding (`show(Company $company)`) — registro inexistente vira 404 automaticamente.
+- Remoção bloqueada por dependência lança `ResourceInUseException` (HTTP 409).
 
 ```php
 final class ExpenseController extends Controller
