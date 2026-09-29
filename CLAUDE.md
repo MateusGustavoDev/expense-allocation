@@ -33,10 +33,13 @@ Todo o desenvolvimento roda via Docker — não é necessário PHP nem Composer 
 docker compose up -d
 docker compose exec app composer install
 docker compose exec app php artisan migrate --seed
-docker compose exec app php artisan test
-docker compose exec app ./vendor/bin/pint
-docker compose exec app ./vendor/bin/phpstan analyse
+docker compose exec app composer test           # Pest
+docker compose exec app composer format         # Pint (aplica)
+docker compose exec app composer format:check   # Pint (só verifica)
+docker compose exec app composer analyse        # Larastan
 ```
+
+Larastan roda no **nível 8** (`phpstan.neon`): tipos declarados em tudo e `null` tratado de forma estrita. Não use baseline nem `@phpstan-ignore` para silenciar erro — corrija o tipo.
 
 Serviços do `compose.yaml`: `app` (PHP), `mysql`, `queue` (worker `php artisan queue:work`) e `vite` (assets em dev). O projeto deve subir apenas com `docker compose up` seguindo o README.
 
@@ -403,8 +406,8 @@ Workflow único em `.github/workflows/ci.yml`, disparado em `pull_request` para 
 
 | Etapa            | Comando                                    |
 | ---------------- | ------------------------------------------ |
-| Formatação       | `./vendor/bin/pint --test`                 |
-| Análise estática | `./vendor/bin/phpstan analyse`             |
+| Formatação       | `composer format:check`                    |
+| Análise estática | `composer analyse`                         |
 | Build de assets  | `npm ci && npm run build`                  |
 | Unit + Feature   | `php artisan test --exclude-group=browser` |
 | E2E (navegador)  | `php artisan test --group=browser`         |
