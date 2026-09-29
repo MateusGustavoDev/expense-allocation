@@ -19,6 +19,8 @@ services:
   queue:
     <<: *php
     command: ["php", "/var/www/html/artisan", "queue:work"]
+    # Worker sobe de novo se cair (ex.: primeira subida, antes das migrations)
+    restart: unless-stopped
     stop_signal: SIGTERM
     healthcheck:
       test: ["CMD", "healthcheck-queue"]
