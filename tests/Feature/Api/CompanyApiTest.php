@@ -40,6 +40,20 @@ it('rejects a duplicated company name', function () {
         ->assertJsonValidationErrors('name');
 });
 
+it('collapses repeated whitespace in the company name', function () {
+    $this->postJson('/api/companies', ['name' => '  Grupo    Teste  '])
+        ->assertCreated()
+        ->assertJsonPath('data.name', 'Grupo Teste');
+});
+
+it('treats names differing only by whitespace or case as duplicates', function () {
+    Company::factory()->create(['name' => 'Grupo Teste']);
+
+    $this->postJson('/api/companies', ['name' => 'GRUPO    teste'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('name');
+});
+
 it('updates a company keeping its own name', function () {
     $company = Company::factory()->create(['name' => 'Acme Holding']);
 

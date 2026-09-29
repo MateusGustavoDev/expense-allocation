@@ -210,6 +210,8 @@ Todo payload e toda resposta usam **`snake_case`** — padrão nativo do Laravel
 - Campos preenchíveis declarados com o atributo `#[Fillable([...])]` (Laravel 13). Nunca `#[Unguarded]` ou `$guarded = []`.
 - Relacionamentos com tipo de retorno e generics para o Larastan (`@return HasMany<Unit, $this>`).
 - Evite N+1: use `with()` ao carregar relacionamentos em listagens. `Model::shouldBeStrict()` está ativo fora de produção e lança exceção em lazy loading.
+- Relacionamentos cuja ordem importa declaram `orderBy()` na própria relação: sem `ORDER BY`, o MySQL devolve as linhas na ordem do índice usado.
+- Agregações (`sum`, `avg`) do MySQL chegam como string pelo PDO: converta explicitamente para `int`.
 
 ```php
 #[Fillable(['description', 'supplier', 'date', 'amount_cents', 'currency'])]
@@ -260,7 +262,7 @@ final class ExpenseController extends Controller
 
 ### Form Requests
 
-Toda entrada passa por um Form Request. Regras que dependem de vários campos (soma = 100%, unidade duplicada) ficam em `after()`.
+Toda entrada passa por um Form Request. Regras que dependem de vários campos (soma = 100%) ficam em `after()`. Form Requests de criação expõem `toData()`, que devolve um objeto de `app/Data` já normalizado (centavos, pontos-base, enums) para a Action.
 
 ```php
 final class StoreExpenseRequest extends FormRequest
@@ -268,18 +270,21 @@ final class StoreExpenseRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'description' => ['required', 'string', 'max:255'],
-            'supplier' => ['required', 'string', 'max:255'],
             'date' => ['required', 'date_format:Y-m-d'],
-            'amount' => ['required', 'decimal:0,2', 'gt:0'],
+            // string + numeric + regex: formato exato que Decimal converte sem float
+            'amount' => ['required', 'string', 'numeric', 'regex:/^\d{1,12}(\.\d{1,2})?$/', 'gt:0'],
             'currency' => ['required', Rule::enum(Currency::class)],
-            'allocations' => ['required', 'array', 'min:1'],
             'allocations.*.unit_id' => ['required', 'integer', 'distinct', 'exists:units,id'],
-            'allocations.*.percentage' => ['required', 'decimal:0,2', 'gt:0', 'lte:100'],
+            // ...
         ];
     }
+
+    public function toData(): ExpenseData { /* ... */ }
 }
 ```
+
+- Valores decimais chegam como **string** (`"1500.00"`); número JSON é recusado.
+- `gt`/`lt`/`between` só comparam numericamente quando a regra `numeric` está presente — sem ela, comparam o **tamanho** da string.
 
 ### Actions
 
