@@ -1,0 +1,14 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    paths:
+        - app
+        - config
+        - database
+        - routes
+
+    # 0 (mais permissivo) a 10 (mais estrito). O nível 8 exige tipos declarados e trata null
+    # de forma estrita. Os níveis 9 e 10 proíbem mixed implícito, o que obriga a afirmar o tipo
+    # de todo dado vindo de request e env().
+    level: 8
