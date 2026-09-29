@@ -244,7 +244,7 @@ Controllers são finos: recebem o Form Request, chamam a Action e retornam o Res
 - **CRUD simples** (empresas, unidades) usa Eloquent direto no controller (`Company::create($request->validated())`). Criar uma Action que só repassa para o model é indireção sem ganho.
 - **Actions** entram quando há regra de negócio (rateio, conversão, importação, relatório) ou quando a mesma operação é chamada por mais de um ponto de entrada (API, Livewire, CSV).
 - Rotas com `Route::apiResource()` e route model binding (`show(Company $company)`) — registro inexistente vira 404 automaticamente.
-- Remoção bloqueada por dependência lança `ResourceInUseException` (HTTP 409).
+- Remoção bloqueada por dependência lança `ResourceInUseException` (estende `ConflictHttpException`, HTTP 409).
 
 ```php
 final class ExpenseController extends Controller
@@ -293,6 +293,15 @@ final class StoreExpenseRequest extends FormRequest
 - Toda resposta passa por um Resource — nunca retorne model cru.
 - A conversão de centavos para string decimal acontece aqui.
 - Relacionamentos com `whenLoaded()`.
+
+### Documentação da API
+
+- OpenAPI gerado automaticamente pelo **Scramble** a partir de rotas, Form Requests e API Resources. UI em `/docs/api`, especificação em `/docs/api.json`, pública em todos os ambientes (gate `viewApiDocs`).
+- Não duplique o contrato em anotações: tipos, validação e formato de resposta vêm do código.
+- Todo controller da API recebe `#[Group('Nome')]`; todo método, um PHPDoc cuja primeira linha é o resumo em português (`Listar empresas`).
+- Status diferente de 200 que o Scramble não infere: `/** @status 201 */` acima do `return`.
+- Erros HTTP de domínio estendem as exceções HTTP do Symfony (ex.: `ConflictHttpException`) para aparecerem na documentação.
+- Descrição de campo de entrada: comentário acima da regra no Form Request.
 
 ### Autenticação
 

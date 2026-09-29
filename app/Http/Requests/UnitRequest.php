@@ -23,7 +23,8 @@ final class UnitRequest extends FormRequest
                 'required', 'string', 'max:120',
                 Rule::unique('units')->where('company_id', $this->integer('company_id'))->ignore($unit),
             ],
-            'slug' => ['required', 'string', 'max:120', 'alpha_dash', Rule::unique('units')->ignore($unit)],
+            // Opcional: quando ausente, é gerado a partir do nome. Referencia a unidade na importação por CSV.
+            'slug' => ['sometimes', 'required', 'string', 'max:120', 'alpha_dash', Rule::unique('units')->ignore($unit)],
         ];
     }
 
