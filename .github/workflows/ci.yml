@@ -1,0 +1,114 @@
+# Checks obrigatórios de todo PR para main e staging.
+#
+# Sem filtro `paths:` de propósito: estes checks são exigidos pela branch protection,
+# e um check pulado fica eternamente "Expected", travando o merge.
+#
+# Sem trigger `push:`: main e staging só recebem código via PR, que já passou por aqui.
+# O deploy é feito pelo Railway ao detectar o merge (com "Wait for CI").
+name: CI
+
+on:
+  pull_request:
+    branches: [main, staging]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  source-branch:
+    name: source branch
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      # head_ref vem do nome da branch (controlado por quem abre o PR),
+      # por isso passa por variável de ambiente em vez de interpolação direta no script
+      - name: Only staging can be merged into main
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          if [ "$BASE_REF" = "main" ] && [ "$HEAD_REF" != "staging" ]; then
+            echo "::error::PRs para main devem vir de staging (recebido: $HEAD_REF)"
+            exit 1
+          fi
+
+  quality:
+    name: format + static analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - uses: ramsey/composer-install@v3
+
+      - name: Format (check-only)
+        run: composer format:check
+
+      - name: Static analysis
+        run: composer analyse
+
+  tests:
+    name: build + tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: testing
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping -h localhost -proot"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 30
+
+    # Sobrescrevem o .env; o phpunit.xml já define DB_CONNECTION=mysql e DB_DATABASE=testing
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_USERNAME: root
+      DB_PASSWORD: root
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_mysql
+          coverage: none
+
+      - uses: ramsey/composer-install@v3
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      # Garante que os assets compilam e gera o manifest usado pelas views nos testes
+      - name: Build assets
+        run: npm run build
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Tests
+        run: composer test
