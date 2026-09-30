@@ -53,6 +53,8 @@
 
     $target = $href ? null : $attributes->get('wire:target');
     $selfLoading = ! $href && $target === null && $attributes->wire('click')->value() !== '';
+    // Sem ícone para trocar, o spinner cobre o texto (que fica invisível e preserva a largura do botão)
+    $spinnerOverText = $selfLoading && $icon === null && ! $iconOnly;
 
     $tag = $href ? 'a' : 'button';
 
@@ -71,6 +73,7 @@
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ds-primary-600 focus-visible:ring-offset-2',
             'disabled:pointer-events-none disabled:opacity-50',
             'group/button data-loading:pointer-events-none data-loading:opacity-50' => $selfLoading,
+            'relative' => $spinnerOverText,
             $variantClasses,
             $boxClasses,
             'w-full' => $full,
@@ -78,7 +81,12 @@
 @endphp
 
 <{{ $tag }} {{ $elementAttributes }}>
-    @if ($iconOnly)
+    @if ($spinnerOverText)
+        <span class="group-data-loading/button:invisible">{{ $slot }}</span>
+        <span class="absolute inset-0 hidden items-center justify-center group-data-loading/button:flex" aria-hidden="true">
+            <x-ui.icon name="loader-circle" class="{{ $sizeConfig['icon'] }} animate-spin" />
+        </span>
+    @elseif ($iconOnly)
         <x-ui.button.leading :icon="$icon" :loading="$loading" :target="$target" :self-loading="$selfLoading" :size-class="$sizeConfig['icon']" />
     @else
         @if ($iconDirection === 'left')

@@ -37,6 +37,12 @@ it('shows loading only on the button that fired the request', function () {
         ->assertDontSee('wire:target', false);
 });
 
+it('covers the text with the spinner when the button has no icon', function () {
+    $this->blade('<x-ui.button wire:click="gotoPage(3)">3</x-ui.button>')
+        ->assertSee('<span class="group-data-loading/button:invisible">3</span>', false)
+        ->assertSee('absolute inset-0 hidden items-center justify-center group-data-loading/button:flex', false);
+});
+
 it('ties the loading state to an explicit wire:target', function () {
     $this->blade('<x-ui.button type="submit" wire:target="save" icon="check">Salvar</x-ui.button>')
         ->assertSee('wire:loading.attr="disabled"', false)
