@@ -17,20 +17,20 @@
     <x-ui.table caption="Unidades cadastradas">
         <x-slot:head>
             <x-ui.table.head>Unidade</x-ui.table.head>
-            <x-ui.table.head>Slug (usado no CSV)</x-ui.table.head>
+            <x-ui.table.head align="center">Slug (usado no CSV)</x-ui.table.head>
             <x-ui.table.head>Empresa</x-ui.table.head>
-            <x-ui.table.head align="right">Despesas</x-ui.table.head>
-            <x-ui.table.head align="right">Ações</x-ui.table.head>
+            <x-ui.table.head>Despesas</x-ui.table.head>
+            <x-ui.table.head align="center">Ações</x-ui.table.head>
         </x-slot:head>
 
         @forelse ($this->units as $unit)
             <x-ui.table.row wire:key="unit-{{ $unit->id }}">
                 <x-ui.table.cell class="font-medium">{{ $unit->name }}</x-ui.table.cell>
-                <x-ui.table.cell><x-ui.badge variant="mono">{{ $unit->slug }}</x-ui.badge></x-ui.table.cell>
+                <x-ui.table.cell align="center"><x-ui.badge variant="mono">{{ $unit->slug }}</x-ui.badge></x-ui.table.cell>
                 <x-ui.table.cell muted>{{ $unit->company->name }}</x-ui.table.cell>
                 <x-ui.table.cell numeric>{{ $unit->allocations_count }}</x-ui.table.cell>
-                <x-ui.table.cell align="right" class="w-24">
-                    <div class="flex justify-end gap-1">
+                <x-ui.table.cell align="center" class="w-24">
+                    <div class="flex justify-center gap-1">
                         <x-ui.button variant="ghost" size="sm" icon="pencil" icon-only aria-label="Editar {{ $unit->name }}" wire:click="edit({{ $unit->id }})" />
                         <x-ui.button variant="ghost" size="sm" icon="trash-2" icon-only aria-label="Excluir {{ $unit->name }}" wire:click="confirmDelete({{ $unit->id }})" />
                     </div>

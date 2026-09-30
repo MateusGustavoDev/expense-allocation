@@ -85,8 +85,8 @@
                 <x-slot:head>
                     <x-ui.table.head>Unidade</x-ui.table.head>
                     <x-ui.table.head>Empresa</x-ui.table.head>
-                    <x-ui.table.head align="right">Despesas</x-ui.table.head>
-                    <x-ui.table.head align="right">Total (BRL)</x-ui.table.head>
+                    <x-ui.table.head>Despesas</x-ui.table.head>
+                    <x-ui.table.head>Total (BRL)</x-ui.table.head>
                     <x-ui.table.head>Participação</x-ui.table.head>
                 </x-slot:head>
 
@@ -123,8 +123,8 @@
                 @if ($report->units !== [])
                     <tr class="bg-ds-gray-50 font-semibold">
                         <td class="px-4 py-3 text-ds-gray-900" colspan="2">Total do período</td>
-                        <td class="px-4 py-3 text-right text-ds-gray-900 tabular-nums">{{ $report->convertedCount }}</td>
-                        <td class="px-4 py-3 text-right text-ds-gray-900 tabular-nums">{{ Format::money($report->totalCents) }}</td>
+                        <td class="px-4 py-3 text-ds-gray-900 tabular-nums">{{ $report->convertedCount }}</td>
+                        <td class="px-4 py-3 text-ds-gray-900 tabular-nums">{{ Format::money($report->totalCents) }}</td>
                         <td class="px-4 py-3 text-sm text-ds-gray-700">{{ $report->totalCents > 0 ? '100%' : '—' }}</td>
                     </tr>
                 @endif

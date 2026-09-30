@@ -55,7 +55,7 @@
                     <div class="hidden grid-cols-[1fr_8rem_8rem_2.5rem] gap-3 border-b border-ds-gray-200 pb-2 text-xs font-semibold tracking-wide text-ds-gray-500 uppercase sm:grid">
                         <span>Unidade</span>
                         <span>Percentual</span>
-                        <span class="text-right">Valor</span>
+                        <span>Valor</span>
                         <span class="sr-only">Remover</span>
                     </div>
 
@@ -63,7 +63,7 @@
                         <div class="grid items-start gap-3 sm:grid-cols-[1fr_8rem_8rem_2.5rem]" wire:key="allocation-{{ $index }}">
                             <x-ui.select wire:model.live="form.allocations.{{ $index }}.unit_id" placeholder="Selecione a unidade" :options="$this->unitOptions" :aria-label="'Unidade da linha '.($index + 1)" full />
                             <x-ui.input wire:model.live.debounce.400ms="form.allocations.{{ $index }}.percentage" icon="percent" icon-direction="right" placeholder="0,00" inputmode="decimal" :aria-label="'Percentual da linha '.($index + 1)" full />
-                            <p class="flex h-10 items-center justify-end text-sm font-medium text-ds-gray-900 tabular-nums">
+                            <p class="flex h-10 items-center text-sm font-medium text-ds-gray-900 tabular-nums">
                                 {{ isset($preview['shares'][$index]) ? Format::money($preview['shares'][$index], $currency) : '—' }}
                             </p>
                             <x-ui.button variant="ghost" icon="trash-2" icon-only :aria-label="'Remover linha '.($index + 1)" wire:click="removeAllocation({{ $index }})" :disabled="count($form->allocations) === 1" />

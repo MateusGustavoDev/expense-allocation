@@ -8,16 +8,16 @@
     <x-ui.table caption="Empresas cadastradas">
         <x-slot:head>
             <x-ui.table.head>Empresa</x-ui.table.head>
-            <x-ui.table.head align="right">Unidades</x-ui.table.head>
-            <x-ui.table.head align="right">Ações</x-ui.table.head>
+            <x-ui.table.head>Unidades</x-ui.table.head>
+            <x-ui.table.head align="center">Ações</x-ui.table.head>
         </x-slot:head>
 
         @forelse ($this->companies as $company)
             <x-ui.table.row wire:key="company-{{ $company->id }}">
                 <x-ui.table.cell class="font-medium">{{ $company->name }}</x-ui.table.cell>
                 <x-ui.table.cell numeric>{{ $company->units_count }}</x-ui.table.cell>
-                <x-ui.table.cell align="right" class="w-24">
-                    <div class="flex justify-end gap-1">
+                <x-ui.table.cell align="center" class="w-24">
+                    <div class="flex justify-center gap-1">
                         <x-ui.button variant="ghost" size="sm" icon="pencil" icon-only aria-label="Editar {{ $company->name }}" wire:click="edit({{ $company->id }})" />
                         <x-ui.button variant="ghost" size="sm" icon="trash-2" icon-only aria-label="Excluir {{ $company->name }}" wire:click="confirmDelete({{ $company->id }})" />
                     </div>

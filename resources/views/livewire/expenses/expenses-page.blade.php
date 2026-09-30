@@ -34,10 +34,10 @@
             <x-ui.table.head sortable="date" :sorted-by="$sortColumn" :direction="$sortDirection">Data</x-ui.table.head>
             <x-ui.table.head>Despesa</x-ui.table.head>
             <x-ui.table.head>Rateio</x-ui.table.head>
-            <x-ui.table.head align="right">Valor original</x-ui.table.head>
-            <x-ui.table.head sortable="amount_brl" :sorted-by="$sortColumn" :direction="$sortDirection" align="right">Valor em BRL</x-ui.table.head>
-            <x-ui.table.head>Status</x-ui.table.head>
-            <x-ui.table.head align="right">Ações</x-ui.table.head>
+            <x-ui.table.head>Valor original</x-ui.table.head>
+            <x-ui.table.head sortable="amount_brl" :sorted-by="$sortColumn" :direction="$sortDirection">Valor em BRL</x-ui.table.head>
+            <x-ui.table.head align="center">Status</x-ui.table.head>
+            <x-ui.table.head align="center">Ações</x-ui.table.head>
         </x-slot:head>
 
         @forelse ($expenses as $expense)
@@ -57,8 +57,8 @@
                 <x-ui.table.cell numeric @class(['font-semibold' => $expense->amount_brl_cents !== null, 'text-ds-gray-400' => $expense->amount_brl_cents === null])>
                     {{ $expense->amount_brl_cents === null ? '—' : Format::money($expense->amount_brl_cents) }}
                 </x-ui.table.cell>
-                <x-ui.table.cell><x-ui.status-badge :status="$expense->conversion_status" /></x-ui.table.cell>
-                <x-ui.table.cell align="right">
+                <x-ui.table.cell align="center"><x-ui.status-badge :status="$expense->conversion_status" /></x-ui.table.cell>
+                <x-ui.table.cell align="center">
                     <x-ui.dropdown>
                         <x-slot:trigger>
                             <x-ui.button variant="ghost" size="sm" icon="ellipsis" icon-only aria-label="Ações de {{ $expense->description }}" />

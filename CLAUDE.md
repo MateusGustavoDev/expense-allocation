@@ -373,6 +373,7 @@ Convenções:
 - Botão com `wire:click` ou `wire:target` mostra loading e fica desabilitado sozinho enquanto o Livewire processa a ação.
 - Variante ou tamanho inválido lança exceção: erro de digitação aparece no desenvolvimento, não em produção.
 - Ícones Lucide pelo nome (`icon="plus"`), via `x-ui.icon`.
+- Tabelas: todas as colunas alinhadas à esquerda, inclusive valores (`numeric` só aplica algarismos de largura fixa). Exceção: colunas de ação e de badge (status, slug) usam `align="center"` no cabeçalho e na célula.
 - Layout da aplicação em `resources/views/layouts/app.blade.php` (`layouts::app`, usado pelos componentes Livewire de página).
 
 Alpine e interatividade:

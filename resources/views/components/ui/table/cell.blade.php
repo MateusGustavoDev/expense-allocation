@@ -1,7 +1,7 @@
 {{--
-    Célula da tabela.
+    Célula da tabela. Padrão: tudo à esquerda; colunas de ação e de badge usam align="center" (célula e cabeçalho).
     - muted: informação secundária (cinza)
-    - numeric: valores e quantidades (à direita, algarismos de largura fixa para alinhar as colunas)
+    - numeric: valores e quantidades (algarismos de largura fixa, sem quebra de linha)
     - mono: identificadores (slug, código)
 --}}
 @props([
@@ -15,7 +15,8 @@
     'px-4 py-3 align-middle',
     'text-ds-gray-500' => $muted,
     'text-ds-gray-900' => ! $muted,
-    'text-right tabular-nums whitespace-nowrap' => $numeric || $align === 'right',
+    'tabular-nums whitespace-nowrap' => $numeric,
+    'text-right' => $align === 'right',
     'text-center' => $align === 'center',
     'font-mono text-xs' => $mono,
 ]) }}>

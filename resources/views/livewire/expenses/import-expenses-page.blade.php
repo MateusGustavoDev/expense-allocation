@@ -83,14 +83,14 @@
                     @if ($report['errors'] !== [])
                         <x-ui.table caption="Linhas com erro" class="rounded-none border-x-0 border-b-0">
                             <x-slot:head>
-                                <x-ui.table.head>Linha</x-ui.table.head>
+                                <x-ui.table.head align="center">Linha</x-ui.table.head>
                                 <x-ui.table.head>Conteúdo</x-ui.table.head>
                                 <x-ui.table.head>Erro</x-ui.table.head>
                             </x-slot:head>
 
                             @foreach ($report['errors'] as $error)
                                 <x-ui.table.row wire:key="import-error-{{ $error['line'] }}">
-                                    <x-ui.table.cell class="w-16"><x-ui.badge variant="mono">{{ $error['line'] }}</x-ui.badge></x-ui.table.cell>
+                                    <x-ui.table.cell align="center" class="w-16"><x-ui.badge variant="mono">{{ $error['line'] }}</x-ui.badge></x-ui.table.cell>
                                     <x-ui.table.cell mono class="max-w-md break-all text-ds-gray-700">{{ $error['content'] }}</x-ui.table.cell>
                                     <x-ui.table.cell>
                                         <ul class="flex flex-col gap-1">

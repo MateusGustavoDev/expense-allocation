@@ -74,11 +74,11 @@
         <x-slot:head>
             <x-ui.table.head>Unidade</x-ui.table.head>
             <x-ui.table.head>Empresa</x-ui.table.head>
-            <x-ui.table.head align="right">Percentual</x-ui.table.head>
+            <x-ui.table.head>Percentual</x-ui.table.head>
             @if ($isForeign)
-                <x-ui.table.head align="right">Valor ({{ $expense->currency->value }})</x-ui.table.head>
+                <x-ui.table.head>Valor ({{ $expense->currency->value }})</x-ui.table.head>
             @endif
-            <x-ui.table.head align="right">Valor em BRL</x-ui.table.head>
+            <x-ui.table.head>Valor em BRL</x-ui.table.head>
         </x-slot:head>
 
         @foreach ($allocations as $allocation)
@@ -98,11 +98,11 @@
 
         <tr class="bg-ds-gray-50 font-semibold">
             <td class="px-4 py-3 text-ds-gray-900" colspan="2">Total</td>
-            <td class="px-4 py-3 text-right text-ds-gray-900 tabular-nums">100,00%</td>
+            <td class="px-4 py-3 text-ds-gray-900 tabular-nums">100,00%</td>
             @if ($isForeign)
-                <td class="px-4 py-3 text-right text-ds-gray-900 tabular-nums">{{ Format::money($expense->amount_cents, $expense->currency) }}</td>
+                <td class="px-4 py-3 text-ds-gray-900 tabular-nums">{{ Format::money($expense->amount_cents, $expense->currency) }}</td>
             @endif
-            <td class="px-4 py-3 text-right text-ds-gray-900 tabular-nums">{{ $expense->amount_brl_cents === null ? '—' : Format::money($expense->amount_brl_cents) }}</td>
+            <td class="px-4 py-3 text-ds-gray-900 tabular-nums">{{ $expense->amount_brl_cents === null ? '—' : Format::money($expense->amount_brl_cents) }}</td>
         </tr>
     </x-ui.table>
 </div>
