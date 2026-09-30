@@ -15,7 +15,7 @@
                 <form novalidate wire:submit="import" class="flex flex-col gap-4">
                     {{-- O input cobre a área inteira: clicar ou soltar o arquivo usa o seletor nativo do navegador --}}
                     <label @class([
-                        'relative flex cursor-pointer flex-col items-center gap-3 rounded-xl border-2 border-dashed px-6 py-10 text-center transition-colors hover:border-ds-primary-400 hover:bg-ds-primary-50 focus-within:ring-2 focus-within:ring-ds-primary-600',
+                        'relative flex cursor-pointer flex-col items-center gap-3 rounded-xl border border-dashed px-6 py-10 text-center transition-colors hover:border-ds-primary-400 hover:bg-ds-primary-50 focus-within:ring-2 focus-within:ring-ds-primary-600',
                         'border-ds-gray-300 bg-ds-gray-50' => ! $fileError,
                         'border-ds-red-400 bg-ds-red-50' => (bool) $fileError,
                     ])>
