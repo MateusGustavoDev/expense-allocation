@@ -377,6 +377,8 @@ Blade components anônimos em `resources/views/components/ui/`. Catálogo com to
 | `x-ui.modal` / `x-ui.confirm` | abertos por evento `open-modal` com o `name`; confirm com `action` (método Livewire) e `danger` |
 | `x-ui.dropdown` + `.item`, `.separator` | slot `trigger`; item com `icon`, `danger`, `href` |
 | `x-ui.logo` | `size` (`sm`, `md`, `lg`, `xl`), `rounded` (`none`, `sm`, `md`, `lg`, `full`), `label` (sem ele, decorativo). Ícone em `size-9/16` e raio em `%` do lado (tokens `--radius-mark-*`): a proporção se mantém em qualquer tamanho |
+| `x-ui.avatar` | `name`, `size` (`sm`, `md`, `lg`), `labelled` (sem ele, decorativo). Iniciais do primeiro e do último nome; com um nome só, as duas primeiras letras |
+| `x-ui.nav-item` | `href`, `icon`, `active`, `external` (nova aba, com aviso só para leitor de tela). Na sidebar, item com `url` em vez de `route` é externo |
 | `x-ui.toaster` | já no layout; dispare com `$this->dispatch('toast', type: 'success', message: '...')` |
 
 Convenções:

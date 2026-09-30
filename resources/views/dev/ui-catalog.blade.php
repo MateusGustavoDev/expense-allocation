@@ -101,6 +101,28 @@
         </div>
     </x-ui.card>
 
+    {{-- Avatar --}}
+    <x-ui.card title="Avatar" description="x-ui.avatar: iniciais do primeiro e do último nome; com um nome só, as duas primeiras letras.">
+        <div class="flex flex-col gap-5">
+            <div class="flex flex-wrap items-end gap-6">
+                @foreach (['sm', 'md', 'lg'] as $avatarSize)
+                    <div class="flex flex-col items-center gap-2">
+                        <x-ui.avatar name="Ana Souza" :size="$avatarSize" />
+                        <p class="{{ $caption }}">{{ $avatarSize }}</p>
+                    </div>
+                @endforeach
+            </div>
+            <div class="flex flex-wrap items-center gap-4">
+                @foreach (['Administrador', 'Maria da Silva Costa', 'Élida Nogueira', 'João'] as $avatarName)
+                    <div class="flex items-center gap-2">
+                        <x-ui.avatar :name="$avatarName" size="sm" />
+                        <span class="text-sm text-ds-gray-700">{{ $avatarName }}</span>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    </x-ui.card>
+
     {{-- Botões --}}
     <section class="{{ $section }}" aria-labelledby="botoes">
         <h2 id="botoes" class="{{ $sectionTitle }}">Botões</h2>

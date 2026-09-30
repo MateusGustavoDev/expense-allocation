@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Enums\ConversionStatus;
+use App\Models\User;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 // Componentes Blade renderizados sem navegador (≈ render() da Testing Library)
@@ -226,4 +227,39 @@ it('links the favicon files in the application layout', function () {
     expect(public_path('favicon.svg'))->toBeFile()
         ->and(filesize(public_path('favicon.ico')))->toBeGreaterThan(0)
         ->and(public_path('apple-touch-icon.png'))->toBeFile();
+});
+
+it('shows the initials of the first and last names', function (string $name, string $initials) {
+    $this->blade('<x-ui.avatar :name="$name" />', ['name' => $name])
+        ->assertSee('>'.$initials.'</span>', false)
+        ->assertSee('aria-hidden="true"', false);
+})->with([
+    'nome e sobrenome' => ['Ana Souza', 'AS'],
+    'nome composto' => ['Maria da Silva Costa', 'MC'],
+    'um nome só' => ['Administrador', 'AD'],
+    'acento' => ['élida nogueira', 'ÉN'],
+    'espaços sobrando' => ['  Ana   Souza ', 'AS'],
+    'uma letra' => ['X', 'X'],
+    'vazio' => ['', '?'],
+]);
+
+it('exposes the avatar as an image when it stands alone', function () {
+    $this->blade('<x-ui.avatar name="Ana Souza" size="lg" labelled />')
+        ->assertSee('role="img"', false)
+        ->assertSee('aria-label="Ana Souza"', false)
+        ->assertSee('size-12', false);
+});
+
+it('opens external navigation items in a new tab', function () {
+    $this->blade('<x-ui.nav-item href="/docs/api" icon="code-xml" external>Documentação da API</x-ui.nav-item>')
+        ->assertSee('target="_blank" rel="noopener"', false)
+        ->assertSee('(abre em nova aba)')
+        ->assertDontSee('arrow-up-right', false);
+});
+
+it('groups the api documentation under integrations and shows the user avatar', function () {
+    $this->actingAs(User::factory()->create(['name' => 'Ana Souza']))
+        ->get('/reports')
+        ->assertSeeInOrder(['Operação', 'Cadastros', 'Integrações', 'Documentação da API'])
+        ->assertSee('>AS</span>', false);
 });

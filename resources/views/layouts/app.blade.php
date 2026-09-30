@@ -15,6 +15,10 @@
             ['label' => 'Unidades', 'icon' => 'building-2', 'route' => 'units.index'],
             ['label' => 'Empresas', 'icon' => 'briefcase', 'route' => 'companies.index'],
         ],
+        // Itens com url (em vez de route) ficam fora da interface e abrem em nova aba
+        'Integrações' => [
+            ['label' => 'Documentação da API', 'icon' => 'code-xml', 'url' => '/docs/api'],
+        ],
     ];
 @endphp
 
@@ -44,32 +48,35 @@
                     <div class="flex flex-col gap-0.5">
                         <p class="px-3 pb-2 text-[11px] font-semibold tracking-wider text-ds-gray-500 uppercase">{{ $group }}</p>
                         @foreach ($items as $item)
-                            <x-ui.nav-item
-                                :href="Route::has($item['route']) ? route($item['route']) : '#'"
-                                :icon="$item['icon']"
-                                :active="request()->routeIs(...($item['active'] ?? [$item['route']]))"
-                            >{{ $item['label'] }}</x-ui.nav-item>
+                            @if (isset($item['url']))
+                                <x-ui.nav-item :href="url($item['url'])" :icon="$item['icon']" external>{{ $item['label'] }}</x-ui.nav-item>
+                            @else
+                                <x-ui.nav-item
+                                    :href="Route::has($item['route']) ? route($item['route']) : '#'"
+                                    :icon="$item['icon']"
+                                    :active="request()->routeIs(...($item['active'] ?? [$item['route']]))"
+                                >{{ $item['label'] }}</x-ui.nav-item>
+                            @endif
                         @endforeach
                     </div>
                 @endforeach
             </nav>
 
-            <div class="mt-auto flex flex-col gap-3 border-t border-ds-gray-200 pt-4">
-                <x-ui.nav-item href="{{ url('/docs/api') }}" icon="book-open">Documentação da API</x-ui.nav-item>
-
-                @auth
-                    <div class="flex items-center gap-2 px-2">
+            @auth
+                <div class="mt-auto border-t border-ds-gray-200 pt-4">
+                    <div class="flex items-center gap-2.5 px-2">
+                        <x-ui.avatar :name="auth()->user()->name" />
                         <div class="flex min-w-0 flex-1 flex-col leading-tight">
-                            <span class="truncate text-sm font-medium text-ds-gray-900">{{ auth()->user()->name }}</span>
-                            <span class="truncate text-xs text-ds-gray-500">{{ auth()->user()->email }}</span>
+                            <span class="truncate text-sm font-medium text-ds-gray-900" title="{{ auth()->user()->name }}">{{ auth()->user()->name }}</span>
+                            <span class="truncate text-xs text-ds-gray-500" title="{{ auth()->user()->email }}">{{ auth()->user()->email }}</span>
                         </div>
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
                             <x-ui.button type="submit" variant="ghost" size="sm" icon="log-out" icon-only aria-label="Sair" title="Sair" />
                         </form>
                     </div>
-                @endauth
-            </div>
+                </div>
+            @endauth
         </aside>
 
         <main id="conteudo" class="min-w-0 flex-1">
