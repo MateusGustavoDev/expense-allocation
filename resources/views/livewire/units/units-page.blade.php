@@ -42,7 +42,7 @@
     </x-ui.table>
 
     <x-ui.modal name="unit-form" :title="$editingId ? 'Editar unidade' : 'Nova unidade'" description="A unidade recebe parte das despesas rateadas.">
-        <form id="unit-form" wire:submit="save" class="flex flex-col gap-4">
+        <form novalidate id="unit-form" wire:submit="save" class="flex flex-col gap-4">
             <x-ui.select wire:model="form.company_id" label="Empresa" placeholder="Selecione a empresa" :options="$this->companyOptions" required full />
             <x-ui.input wire:model="form.name" label="Nome da unidade" placeholder="Ex.: Unidade São Paulo" required full />
             <x-ui.input wire:model="form.slug" label="Slug" placeholder="gerado a partir do nome" hint="Identificador da unidade na importação por CSV. Se ficar vazio, é gerado a partir do nome." mono full />

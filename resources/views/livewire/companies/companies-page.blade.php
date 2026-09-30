@@ -33,7 +33,7 @@
     </x-ui.table>
 
     <x-ui.modal name="company-form" :title="$editingId ? 'Editar empresa' : 'Nova empresa'" description="Empresa do grupo que tem unidades participando do rateio.">
-        <form id="company-form" wire:submit="save" class="flex flex-col gap-4">
+        <form novalidate id="company-form" wire:submit="save" class="flex flex-col gap-4">
             <x-ui.input wire:model="form.name" label="Nome" placeholder="Ex.: Acme Holding" required full />
         </form>
 
