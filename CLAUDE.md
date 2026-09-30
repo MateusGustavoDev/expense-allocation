@@ -205,8 +205,10 @@ Todo payload e toda resposta usam **`snake_case`** — padrão nativo do Laravel
 
 ### Relatório
 
-- Total em BRL por unidade num período (`date_from`, `date_to`, inclusivos), calculado **no banco** (`SUM ... GROUP BY`), nunca somando coleções em PHP.
-- Considera apenas despesas com `conversion_status = converted`. O relatório informa separadamente a quantidade de despesas pendentes/falhas no período, para deixar claro quando o total está incompleto.
+- Total em BRL por unidade num período (`date_from`, `date_to`, inclusivos), calculado **no banco** (`SUM ... GROUP BY` sobre `expense_allocations.amount_brl_cents`), nunca somando coleções em PHP. `GET /api/reports/unit-totals`.
+- Considera apenas despesas com `conversion_status = converted`. O relatório informa separadamente pendentes e falhas do período, com a soma na moeda original, e `is_complete = false` enquanto houver alguma.
+- Todas as unidades aparecem, inclusive as sem despesa no período (total zero), ordenadas do maior total para o menor.
+- Participação de cada unidade em pontos-base, com arredondamento comercial: a soma das participações pode diferir de 100% em centésimos; os totais em centavos sempre fecham.
 - Uma única Action (`GetUnitTotalsReport`) atende API e interface.
 
 ---
