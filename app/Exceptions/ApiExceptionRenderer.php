@@ -11,10 +11,12 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Exceptions\PostTooLargeException;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
@@ -44,7 +46,9 @@ final class ApiExceptionRenderer
 
     public function __invoke(Throwable $exception, Request $request): ?JsonResponse
     {
-        if (! $request->is('api/*')) {
+        // Validação (422 com "errors" por campo) e respostas prontas seguem a renderização do Laravel. Sem este
+        // retorno, em produção (APP_DEBUG=false) elas cairiam no caso do erro inesperado e virariam 500
+        if (! $request->is('api/*') || $exception instanceof ValidationException || $exception instanceof HttpResponseException) {
             return null;
         }
 
