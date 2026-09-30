@@ -138,3 +138,31 @@ it('calls the Livewire action when a confirmation is accepted', function () {
         ->assertSee('wire:click="delete"', false)
         ->assertSee('bg-ds-red-600', false);
 });
+
+it('binds the date picker to wire:model through x-modelable', function () {
+    $this->blade('<x-ui.date-picker wire:model="form.date" label="Data da despesa" required />')
+        ->assertSee('x-data="datePicker(', false)
+        ->assertSee('x-modelable="value"', false)
+        ->assertSee('wire:model="form.date"', false)
+        ->assertSee('for="field-form-date"', false)
+        ->assertDontSee('type="hidden"', false);
+});
+
+it('posts the picked date through a hidden input outside Livewire', function () {
+    $this->blade('<x-ui.date-picker name="date" value="2026-09-01" />')
+        ->assertSee('<input type="hidden" name="date"', false)
+        ->assertSee('value: \'2026-09-01\'', false);
+});
+
+it('posts both ends of the period outside Livewire', function () {
+    $this->blade('<x-ui.date-range-picker name="period" :value="[\'from\' => \'2026-09-01\', \'to\' => \'2026-09-30\']" />')
+        ->assertSee('x-data="dateRangePicker(', false)
+        ->assertSee('name="period[from]"', false)
+        ->assertSee('name="period[to]"', false);
+});
+
+it('renders overlay panels in the body so cards do not clip them', function () {
+    $this->blade('<x-ui.date-range-picker name="period" />')->assertSee('x-teleport="body"', false);
+    // Quebra de linha depois de </x-slot>: o Blade compila para @endslot sem espaço, e texto colado quebra a diretiva
+    $this->blade("<x-ui.dropdown>\n<x-slot:trigger><button>Ações</button></x-slot:trigger>\nItem\n</x-ui.dropdown>")->assertSee('x-teleport="body"', false);
+});
