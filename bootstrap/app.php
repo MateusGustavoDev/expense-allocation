@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Exceptions\ApiExceptionRenderer;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -21,4 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
+
+        // Mensagens em português para os erros gerados pelo framework na API (404, 405, 413, 500...)
+        $exceptions->render(new ApiExceptionRenderer);
     })->create();

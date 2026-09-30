@@ -263,6 +263,14 @@ Controllers são finos: recebem o Form Request, chamam a Action e retornam o Res
 - Rotas com `Route::apiResource()` e route model binding (`show(Company $company)`) — registro inexistente vira 404 automaticamente.
 - Remoção bloqueada por dependência lança `ResourceInUseException` (estende `ConflictHttpException`, HTTP 409).
 
+### Contrato de erro da API
+
+- Todo erro responde `{"message": "..."}` em português; validação acrescenta `errors` por campo (422).
+- `App\Exceptions\ApiExceptionRenderer` (registrado em `bootstrap/app.php`) traduz os erros do framework: registro inexistente (`Empresa não encontrada.`, sem expor a classe do model), rota inexistente, método não permitido (com `Allow`), corpo grande demais, 401, 403 e 429.
+- Erros 4xx nunca levam trace, nem com `APP_DEBUG=true`: são erros previstos do cliente. Só o 500 mostra o trace em desenvolvimento; em produção, `Erro interno do servidor.`.
+- Exceções de domínio estendem as exceções HTTP do Symfony com a mensagem em português — o renderer só remove o trace.
+- JSON malformado no corpo responde 400 (`EnsureValidJsonBody`), em vez de um 422 apontando campos ausentes.
+
 ```php
 final class ExpenseController extends Controller
 {
