@@ -69,6 +69,9 @@ return [
 
     'timezone' => 'UTC',
 
+    // Fuso do negócio: define "hoje" e "este mês" nos filtros da interface (o servidor e o banco seguem em UTC)
+    'business_timezone' => env('APP_BUSINESS_TIMEZONE', 'America/Sao_Paulo'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration
