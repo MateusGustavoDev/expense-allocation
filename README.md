@@ -53,6 +53,8 @@ Os mesmos três comandos rodam no CI em todo pull request.
 1. Em **Cadastros**, crie uma empresa e as unidades com os slugs `unidade-a`, `unidade-b` e `unidade-c`. O slug identifica a unidade no CSV.
 2. Em **Importar CSV**, envie `docs/examples/despesas-setembro.csv`. O arquivo tem três linhas inválidas de propósito (data inexistente, rateio somando 90% e unidade desconhecida): as outras dez entram, e o relatório aponta cada erro pelo número da linha.
 3. Em **Despesas**, as despesas em dólar aparecem como pendentes e o worker as converte em segundos. **Nova despesa** mostra a divisão dos centavos enquanto você digita os percentuais.
+
+   > Uma despesa em dólar **com a data de hoje** fica pendente até o dia seguinte: a cotação PTAX do dia só é definitiva depois que ele termina (veja [Conversão de moeda](#conversão-de-moeda)). Para ver a conversão na hora, use uma data passada.
 4. Em **Relatório**, escolha o período e veja o total em reais por unidade.
 
 ### Usando a API
@@ -103,7 +105,7 @@ Staging e produção não têm cadastro público: usuários são criados com `ph
 - **Cotação PTAX do Banco Central, de venda.** É a referência oficial, pública e sem chave de acesso. Fica atrás da interface `ExchangeRateProvider`: trocar de provedor é trocar um binding.
 - **A despesa em dólar é salva primeiro, como pendente, e a conversão vai para a fila.** Se a API do Banco Central estiver fora do ar, o cadastro acontece do mesmo jeito; é isso que garante que a despesa não se perde.
 - **Nova tentativa automática:** 5 tentativas com espera crescente (1 min, 5 min, 15 min, 1 h). Esgotadas, a despesa fica como "falhou" e pode ser reenviada pela interface ou pela API. O `scheduler` ainda reenfileira as pendentes a cada 10 minutos, como rede de segurança.
-- **Cotação da data da despesa, usada depois que o dia fecha no horário de Brasília.** Sábado, domingo e feriado usam o último dia útil anterior; a data efetivamente usada fica registrada na despesa.
+- **Cotação da data da despesa, usada depois que o dia fecha no horário de Brasília.** Durante o dia a PTAX ainda não é definitiva, então a despesa com a data de hoje fica pendente e o `scheduler` a converte no dia seguinte. A alternativa comum no mercado é usar a PTAX do dia útil anterior, já conhecida no momento do lançamento; segui o enunciado ao pé da letra, e a escolha está entre as perguntas ao negócio. Sábado, domingo e feriado usam o último dia útil anterior; a data efetivamente usada fica registrada na despesa.
 - **Cotações ficam guardadas no banco:** a API externa é consultada no máximo uma vez por data.
 - **Multiplicação com bcmath:** centavos × cotação estouraria um inteiro de 64 bits, e float perderia precisão.
 
