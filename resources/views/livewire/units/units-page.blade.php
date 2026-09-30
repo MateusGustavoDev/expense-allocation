@@ -15,6 +15,30 @@
     @endif
 
     <x-ui.table caption="Unidades cadastradas">
+        <x-slot:mobile>
+            @forelse ($this->units as $unit)
+                <li wire:key="unit-card-{{ $unit->id }}" class="flex items-center gap-2 py-3 pr-2 pl-4">
+                    <div class="flex min-w-0 flex-1 flex-col gap-1">
+                        <p class="truncate text-sm font-medium text-ds-gray-900">{{ $unit->name }}</p>
+                        <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ds-gray-500">
+                            <x-ui.badge variant="mono" size="sm">{{ $unit->slug }}</x-ui.badge>
+                            <span class="truncate">{{ $unit->company->name }} · {{ $unit->allocations_count }} {{ Str::plural('despesa', $unit->allocations_count) }}</span>
+                        </div>
+                    </div>
+                    <x-ui.dropdown>
+                        <x-slot:trigger>
+                            <x-ui.button variant="ghost" size="sm" icon="ellipsis" icon-only aria-label="Ações de {{ $unit->name }}" />
+                        </x-slot:trigger>
+                        <x-ui.dropdown.item icon="pencil" wire:click="edit({{ $unit->id }})">Editar</x-ui.dropdown.item>
+                        <x-ui.dropdown.separator />
+                        <x-ui.dropdown.item icon="trash-2" danger wire:click="confirmDelete({{ $unit->id }})">Excluir</x-ui.dropdown.item>
+                    </x-ui.dropdown>
+                </li>
+            @empty
+                <li><x-ui.empty icon="building-2" title="Nenhuma unidade cadastrada" description="Cadastre as unidades que recebem o rateio das despesas." /></li>
+            @endforelse
+        </x-slot:mobile>
+
         <x-slot:head>
             <x-ui.table.head>Unidade</x-ui.table.head>
             <x-ui.table.head align="center">Slug (usado no CSV)</x-ui.table.head>

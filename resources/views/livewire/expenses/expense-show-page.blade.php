@@ -31,7 +31,7 @@
     @endif
 
     <x-ui.card title="Dados da despesa">
-        <dl class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <dl class="grid grid-cols-2 gap-x-4 gap-y-5 sm:gap-6 lg:grid-cols-4">
             <div class="{{ $dl }}"><dt class="{{ $dt }}">Data</dt><dd class="{{ $dd }} tabular-nums">{{ Format::date($expense->date) }}</dd></div>
             <div class="{{ $dl }}"><dt class="{{ $dt }}">Valor original</dt><dd class="{{ $dd }} font-semibold tabular-nums">{{ Format::money($expense->amount_cents, $expense->currency) }}</dd></div>
             <div class="{{ $dl }}"><dt class="{{ $dt }}">Moeda</dt><dd class="{{ $dd }}">{{ $expense->currency->label() }}</dd></div>
@@ -70,6 +70,32 @@
                 <p class="text-sm text-ds-gray-500">Os centavos que sobram na divisão vão para as maiores frações: a soma das partes sempre fecha com o total.</p>
             </div>
         </x-slot:toolbar>
+
+        <x-slot:mobile>
+            @foreach ($allocations as $allocation)
+                <li wire:key="allocation-card-{{ $allocation->id }}" class="flex items-start justify-between gap-3 px-4 py-3.5">
+                    <div class="flex min-w-0 flex-col gap-0.5">
+                        <p class="truncate text-sm font-medium text-ds-gray-900">{{ $allocation->unit->name }}</p>
+                        <p class="truncate text-xs text-ds-gray-500">{{ $allocation->unit->company->name }} · {{ Format::decimal($allocation->basis_points) }}%</p>
+                    </div>
+                    <div class="flex shrink-0 flex-col items-end gap-0.5 tabular-nums">
+                        <p class="text-sm font-semibold text-ds-gray-900">{{ $allocation->amount_brl_cents === null ? '—' : Format::money($allocation->amount_brl_cents) }}</p>
+                        @if ($isForeign)
+                            <p class="text-xs text-ds-gray-500">{{ Format::money($allocation->amount_cents, $expense->currency) }}</p>
+                        @endif
+                    </div>
+                </li>
+            @endforeach
+            <li class="flex items-start justify-between gap-3 bg-ds-gray-50 px-4 py-3 text-sm font-semibold text-ds-gray-900">
+                <span>Total · 100%</span>
+                <span class="flex flex-col items-end gap-0.5 tabular-nums">
+                    {{ $expense->amount_brl_cents === null ? '—' : Format::money($expense->amount_brl_cents) }}
+                    @if ($isForeign)
+                        <span class="text-xs font-normal text-ds-gray-500">{{ Format::money($expense->amount_cents, $expense->currency) }}</span>
+                    @endif
+                </span>
+            </li>
+        </x-slot:mobile>
 
         <x-slot:head>
             <x-ui.table.head>Unidade</x-ui.table.head>

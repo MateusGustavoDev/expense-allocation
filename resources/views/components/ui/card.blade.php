@@ -21,7 +21,8 @@
 
 <section {{ $attributes->class(['overflow-hidden rounded-xl border border-ds-gray-200 bg-ds-white']) }}>
     @if ($hasHeader)
-        <header class="flex items-start justify-between gap-4 px-6 pt-6">
+        {{-- No celular as ações descem para baixo do título, em vez de espremê-lo --}}
+        <header class="flex flex-col gap-3 px-4 pt-5 sm:flex-row sm:items-start sm:justify-between sm:gap-4 sm:px-6 sm:pt-6">
             <div class="flex flex-col gap-1">
                 @if ($title)
                     <h2 class="text-base font-semibold text-ds-gray-900">{{ $title }}</h2>
@@ -31,17 +32,17 @@
                 @endif
             </div>
             @isset($actions)
-                <div class="flex shrink-0 items-center gap-2">{{ $actions }}</div>
+                <div class="flex flex-wrap items-center gap-2 sm:shrink-0">{{ $actions }}</div>
             @endisset
         </header>
     @endif
 
-    <div @class(['px-6 pb-6' => $padded, 'pt-5' => $padded && $hasHeader, 'pt-6' => $padded && ! $hasHeader])>
+    <div @class(['px-4 pb-5 sm:px-6 sm:pb-6' => $padded, 'pt-4 sm:pt-5' => $padded && $hasHeader, 'pt-5 sm:pt-6' => $padded && ! $hasHeader])>
         {{ $slot }}
     </div>
 
     @isset($footer)
-        <footer class="flex flex-col-reverse gap-3 border-t border-ds-gray-200 bg-ds-gray-50 px-6 py-4 sm:flex-row sm:justify-end">
+        <footer class="flex flex-col-reverse gap-3 border-t border-ds-gray-200 bg-ds-gray-50 px-4 py-4 sm:flex-row sm:justify-end sm:px-6">
             {{ $footer }}
         </footer>
     @endisset

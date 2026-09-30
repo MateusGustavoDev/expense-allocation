@@ -18,6 +18,7 @@
     </x-ui.table>
 
     caption: descrição da tabela para leitores de tela (não aparece na tela).
+    mobile: versão da lista para telas pequenas (<li> por item); com ele, a tabela só aparece a partir de md.
 --}}
 @props(['caption' => null])
 
@@ -26,7 +27,11 @@
         <div class="border-b border-ds-gray-200 px-4 py-3">{{ $toolbar }}</div>
     @endisset
 
-    <div class="overflow-x-auto">
+    {{-- Com o slot mobile, a tabela aparece a partir de md e o celular recebe a lista em cards --}}
+    @isset($mobile)
+        <ul class="divide-y divide-ds-gray-200 md:hidden" role="list">{{ $mobile }}</ul>
+    @endisset
+    <div @class(['overflow-x-auto', 'hidden md:block' => isset($mobile)])>
         <table class="w-full border-collapse text-left text-sm">
             @if ($caption)
                 <caption class="sr-only">{{ $caption }}</caption>
