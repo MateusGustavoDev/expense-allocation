@@ -89,6 +89,25 @@ it('creates a USD expense as pending conversion', function () {
     Queue::assertPushed(ConvertExpenseCurrencyJob::class, fn (ConvertExpenseCurrencyJob $job): bool => $job->expense->is($expense));
 });
 
+it('requeues the conversion of a failed expense', function () {
+    $expense = Expense::factory()->pendingUsd()->create(['conversion_status' => ConversionStatus::Failed]);
+
+    $this->postJson("/api/expenses/{$expense->id}/retry-conversion")
+        ->assertAccepted()
+        ->assertJsonPath('data.conversion_status', 'pending');
+
+    Queue::assertPushed(ConvertExpenseCurrencyJob::class);
+});
+
+it('refuses to requeue an expense that is already converted', function () {
+    $expense = Expense::factory()->create();
+
+    $this->postJson("/api/expenses/{$expense->id}/retry-conversion")
+        ->assertConflict()
+        ->assertJsonPath('message', 'A despesa já foi convertida.');
+
+    Queue::assertNothingPushed();
+});
 
 it('rejects allocations that do not sum to 100%', function () {
     $this->postJson('/api/expenses', expensePayload([

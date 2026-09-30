@@ -29,6 +29,16 @@ services:
       test: ["CMD", "healthcheck-queue"]
       start_period: 10s
 
+  # Executa as tarefas agendadas (routes/console.php), como a varredura de conversões pendentes
+  scheduler:
+    <<: *php
+    command: ["php", "/var/www/html/artisan", "schedule:work"]
+    restart: unless-stopped
+    stop_signal: SIGTERM
+    healthcheck:
+      test: ["CMD", "healthcheck-schedule"]
+      start_period: 10s
+
   vite:
     image: node:24-alpine
     working_dir: /app

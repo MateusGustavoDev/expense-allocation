@@ -10,3 +10,4 @@ use Illuminate\Support\Facades\Route;
 Route::apiResource('companies', CompanyController::class);
 Route::apiResource('units', UnitController::class);
 Route::apiResource('expenses', ExpenseController::class)->only(['index', 'store', 'show']);
+Route::post('expenses/{expense}/retry-conversion', [ExpenseController::class, 'retryConversion'])->name('expenses.retry-conversion');
