@@ -63,7 +63,8 @@
             </nav>
 
             @auth
-                <div class="mt-auto border-t border-ds-gray-200 pt-4">
+                {{-- -mx-4 + px-4: a linha ocupa a largura toda da sidebar (que tem px-4) sem mexer no conteúdo --}}
+                <div class="-mx-4 mt-auto border-t border-ds-gray-200 px-4 pt-4">
                     <div class="flex items-center gap-2.5 px-2">
                         <x-ui.avatar :name="auth()->user()->name" />
                         <div class="flex min-w-0 flex-1 flex-col leading-tight">
