@@ -42,6 +42,12 @@ it('lists the allowed methods when the method is not supported', function () {
         ->assertExactJson(['message' => 'Método DELETE não permitido nesta rota. Métodos aceitos: GET, HEAD.']);
 });
 
+it('rejects a malformed json body instead of reporting missing fields', function () {
+    $this->call('POST', '/api/companies', server: ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json'], content: '{"name": ')
+        ->assertBadRequest()
+        ->assertExactJson(['message' => 'O corpo da requisição não é um JSON válido.']);
+});
+
 it('rejects a body larger than the server limit', function () {
     $this->call('POST', '/api/companies', server: ['CONTENT_LENGTH' => PHP_INT_MAX, 'HTTP_ACCEPT' => 'application/json'])
         ->assertStatus(413)
