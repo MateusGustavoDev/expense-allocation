@@ -8,7 +8,7 @@
     $navigation = [
         'Operação' => [
             ['label' => 'Relatório', 'icon' => 'chart-column', 'route' => 'reports.index'],
-            ['label' => 'Despesas', 'icon' => 'receipt', 'route' => 'expenses.index'],
+            ['label' => 'Despesas', 'icon' => 'receipt', 'route' => 'expenses.index', 'active' => ['expenses.index', 'expenses.create', 'expenses.show']],
             ['label' => 'Importar CSV', 'icon' => 'file-up', 'route' => 'expenses.import'],
         ],
         'Cadastros' => [
@@ -54,7 +54,7 @@
                             <x-ui.nav-item
                                 :href="Route::has($item['route']) ? route($item['route']) : '#'"
                                 :icon="$item['icon']"
-                                :active="request()->routeIs($item['route'])"
+                                :active="request()->routeIs(...($item['active'] ?? [$item['route']]))"
                             >{{ $item['label'] }}</x-ui.nav-item>
                         @endforeach
                     </div>
