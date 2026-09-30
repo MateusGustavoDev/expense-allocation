@@ -8,6 +8,8 @@
     $buttonVariants = ['primary', 'secondary', 'outline', 'ghost', 'danger', 'danger-outline', 'link'];
     $sizes = ['sm', 'md', 'lg'];
     $badgeVariants = ['neutral', 'primary', 'success', 'warning', 'danger', 'info', 'outline', 'mono'];
+    $logoSizes = ['sm', 'md', 'lg', 'xl'];
+    $logoRadii = ['none', 'sm', 'md', 'lg', 'full'];
 
     $rows = collect([
         ['2026-09-29', 'Assinatura AWS', 'Amazon Web Services', 'US$ 320,00', null, App\Enums\ConversionStatus::Pending],
@@ -62,6 +64,40 @@
             <p class="text-sm">A soma dos percentuais precisa ser exatamente 100%. <span class="text-ds-gray-500">text-sm · corpo</span></p>
             <p class="text-xs text-ds-gray-500">Gerado a partir do nome. text-xs · ajuda e legendas</p>
             <p class="font-mono text-sm">unidade-a:50|unidade-b:30 <span class="font-sans text-ds-gray-500">font-mono · identificadores</span></p>
+        </div>
+    </x-ui.card>
+
+    {{-- Logo --}}
+    <x-ui.card title="Logo" description="x-ui.logo com size e rounded. Ícone em 9/16 do lado e raio em porcentagem do lado: a forma é a mesma em qualquer tamanho.">
+        <div class="flex flex-col gap-6">
+            <div class="overflow-x-auto">
+                <div class="grid w-fit grid-cols-[5rem_repeat(4,5rem)] items-center gap-y-4">
+                    <span></span>
+                    @foreach ($logoSizes as $logoSize)
+                        <p class="{{ $caption }} text-center">{{ $logoSize }}</p>
+                    @endforeach
+
+                    @foreach ($logoRadii as $logoRadius)
+                        <p class="{{ $caption }}">{{ $logoRadius }}</p>
+                        @foreach ($logoSizes as $logoSize)
+                            <div class="flex justify-center">
+                                <x-ui.logo :size="$logoSize" :rounded="$logoRadius" />
+                            </div>
+                        @endforeach
+                    @endforeach
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-2 border-t border-ds-gray-200 pt-5">
+                <p class="{{ $caption }}">Na sidebar (padrão: size="md" rounded="md")</p>
+                <div class="flex items-center gap-2.5">
+                    <x-ui.logo />
+                    <span class="flex flex-col leading-tight">
+                        <span class="text-base font-bold text-ds-gray-900">Rateio</span>
+                        <span class="text-xs text-ds-gray-500">Despesas compartilhadas</span>
+                    </span>
+                </div>
+            </div>
         </div>
     </x-ui.card>
 
