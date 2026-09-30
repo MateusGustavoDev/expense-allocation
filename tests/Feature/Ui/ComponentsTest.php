@@ -215,3 +215,15 @@ it('exposes the logo as an image when it has a label', function () {
 it('rejects an unknown logo size', function () {
     $this->blade('<x-ui.logo size="huge" />');
 })->throws(ErrorException::class, 'Tamanho de logo desconhecido: huge');
+
+it('links the favicon files in the application layout', function () {
+    $this->get('/reports')
+        ->assertOk()
+        ->assertSee('rel="icon" href="'.asset('favicon.svg').'" type="image/svg+xml"', false)
+        ->assertSee('rel="icon" href="'.asset('favicon.ico').'"', false)
+        ->assertSee('rel="apple-touch-icon" href="'.asset('apple-touch-icon.png').'"', false);
+
+    expect(public_path('favicon.svg'))->toBeFile()
+        ->and(filesize(public_path('favicon.ico')))->toBeGreaterThan(0)
+        ->and(public_path('apple-touch-icon.png'))->toBeFile();
+});

@@ -384,6 +384,7 @@ Convenções:
 - Ícones Lucide pelo nome (`icon="plus"`), via `x-ui.icon`.
 - Tabelas: todas as colunas alinhadas à esquerda, inclusive valores (`numeric` só aplica algarismos de largura fixa). Exceção: colunas de ação e de badge (status, slug) usam `align="center"` no cabeçalho e na célula.
 - Ações da linha sempre num `x-ui.dropdown` aberto por botão `ellipsis` (`aria-label="Ações de {nome}"`), com ações destrutivas por último, após um separador e com `danger`.
+- Favicon (`public/favicon.svg`, `favicon.ico` 16/32/48 e `apple-touch-icon.png` 180) espelha o `x-ui.logo` com `rounded="md"`: raio de 25% e ícone em 9/16 do lado. O SVG é a fonte; ICO e PNG são gerados a partir dele. O `apple-touch-icon` não tem cantos arredondados, porque o iOS aplica a própria máscara. Mudou a marca, atualize os dois.
 - Layout da aplicação em `resources/views/layouts/app.blade.php` (`layouts::app`, usado pelos componentes Livewire de página).
 
 Alpine e interatividade:
