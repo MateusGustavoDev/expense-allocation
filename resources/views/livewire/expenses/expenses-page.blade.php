@@ -37,7 +37,7 @@
             <x-ui.table.head align="right">Valor original</x-ui.table.head>
             <x-ui.table.head sortable="amount_brl" :sorted-by="$sortColumn" :direction="$sortDirection" align="right">Valor em BRL</x-ui.table.head>
             <x-ui.table.head>Status</x-ui.table.head>
-            <x-ui.table.head><span class="sr-only">Ações</span></x-ui.table.head>
+            <x-ui.table.head align="right">Ações</x-ui.table.head>
         </x-slot:head>
 
         @forelse ($expenses as $expense)

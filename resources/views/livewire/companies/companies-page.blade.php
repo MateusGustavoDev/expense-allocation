@@ -9,7 +9,7 @@
         <x-slot:head>
             <x-ui.table.head>Empresa</x-ui.table.head>
             <x-ui.table.head align="right">Unidades</x-ui.table.head>
-            <x-ui.table.head><span class="sr-only">Ações</span></x-ui.table.head>
+            <x-ui.table.head align="right">Ações</x-ui.table.head>
         </x-slot:head>
 
         @forelse ($this->companies as $company)

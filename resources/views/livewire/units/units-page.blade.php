@@ -20,7 +20,7 @@
             <x-ui.table.head>Slug (usado no CSV)</x-ui.table.head>
             <x-ui.table.head>Empresa</x-ui.table.head>
             <x-ui.table.head align="right">Despesas</x-ui.table.head>
-            <x-ui.table.head><span class="sr-only">Ações</span></x-ui.table.head>
+            <x-ui.table.head align="right">Ações</x-ui.table.head>
         </x-slot:head>
 
         @forelse ($this->units as $unit)
