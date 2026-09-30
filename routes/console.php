@@ -1,8 +1,8 @@
 <?php
 
-use Illuminate\Foundation\Inspiring;
-use Illuminate\Support\Facades\Artisan;
+declare(strict_types=1);
 
-Artisan::command('inspire', function () {
-    $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote');
+use Illuminate\Support\Facades\Schedule;
+
+// Rede de segurança da conversão de moeda: pendentes cuja cotação já existe voltam para a fila
+Schedule::command('expenses:convert-pending')->everyTenMinutes()->withoutOverlapping();

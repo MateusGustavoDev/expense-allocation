@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Mesmas proporções de <x-ui.logo rounded="md">: raio em 25% do lado, ícone em 9/16 do lado, centralizado -->
+  <rect width="64" height="64" rx="16" fill="#FE8400"/>
+  <svg x="14" y="14" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#0C0B0A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Ícone Lucide "split" -->
+    <path d="M16 3h5v5"/>
+    <path d="M8 3H3v5"/>
+    <path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3"/>
+    <path d="m15 9 6-6"/>
+  </svg>
+</svg>

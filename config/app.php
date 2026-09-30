@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 return [
 
     /*
@@ -67,6 +69,9 @@ return [
 
     'timezone' => 'UTC',
 
+    // Fuso do negócio: define "hoje" e "este mês" nos filtros da interface (o servidor e o banco seguem em UTC)
+    'business_timezone' => env('APP_BUSINESS_TIMEZONE', 'America/Sao_Paulo'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration
@@ -78,7 +83,7 @@ return [
     |
     */
 
-    'locale' => env('APP_LOCALE', 'en'),
+    'locale' => env('APP_LOCALE', 'pt_BR'),
 
     'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
 

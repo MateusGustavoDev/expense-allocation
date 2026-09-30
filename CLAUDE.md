@@ -33,12 +33,17 @@ Todo o desenvolvimento roda via Docker — não é necessário PHP nem Composer 
 docker compose up -d
 docker compose exec app composer install
 docker compose exec app php artisan migrate --seed
-docker compose exec app php artisan test
-docker compose exec app ./vendor/bin/pint
-docker compose exec app ./vendor/bin/phpstan analyse
+docker compose exec app composer test           # Pest
+docker compose exec app composer format         # Pint (aplica)
+docker compose exec app composer format:check   # Pint (só verifica)
+docker compose exec app composer analyse        # Larastan
 ```
 
-Serviços do `compose.yaml`: `app` (PHP), `mysql`, `queue` (worker `php artisan queue:work`) e `vite` (assets em dev). O projeto deve subir apenas com `docker compose up` seguindo o README.
+Larastan roda no **nível 8** (`phpstan.neon`): tipos declarados em tudo e `null` tratado de forma estrita. Não use baseline nem `@phpstan-ignore` para silenciar erro — corrija o tipo.
+
+Serviços do `compose.yaml`: `app` (PHP), `mysql`, `queue` (worker `php artisan queue:work`), `scheduler` (`php artisan schedule:work`) e `vite` (assets em dev). `app`, `queue` e `scheduler` usam a imagem do `Dockerfile` (serversideup/php + bcmath). O projeto deve subir apenas com `docker compose up` seguindo o README.
+
+O worker mantém o código em memória: depois de alterar Jobs ou Actions, rode `docker compose restart queue`.
 
 ---
 
@@ -80,9 +85,13 @@ app/
 ├── Livewire/                # Componentes da interface, por domínio
 ├── Models/
 ├── Providers/               # Bindings do container (interface -> implementação)
-└── Services/                # Integrações externas e lógica pura reutilizável
-    ├── Money/AllocationSplitter.php
-    └── ExchangeRates/BcbPtaxProvider.php
+├── Services/                # Integrações externas e lógica pura reutilizável
+│   ├── Csv/CsvReader.php
+│   ├── Money/               # AllocationSplitter, CurrencyConverter, Decimal
+│   └── ExchangeRates/       # BcbPtaxProvider, ExchangeRates (cache)
+├── Support/                 # Utilitários de apresentação (Format)
+└── Validation/              # Regras compartilhadas entre API e CSV (ExpenseRules)
+lang/pt_BR/                  # Mensagens de validação em português e nomes dos campos
 database/
 ├── factories/
 ├── migrations/
@@ -114,7 +123,7 @@ tests/
 | Rotas da API           | `kebab-case`, plural             | `/api/expenses`, `/api/reports/unit-totals` |
 | Blade views/components | `kebab-case`                     | `expense-form.blade.php`, `<x-ui.button>`   |
 | Controllers            | `{Resource}Controller`           | `ExpenseController`                         |
-| Form Requests          | `{Action}{Resource}Request`      | `StoreExpenseRequest`                       |
+| Form Requests          | `{Resource}Request` se store e update têm as mesmas regras; senão `{Action}{Resource}Request` | `UnitRequest`, `StoreExpenseRequest` |
 | API Resources          | `{Resource}Resource`             | `ExpenseResource`                           |
 | Jobs                   | `{Verbo}{Coisa}Job`              | `ConvertExpenseCurrencyJob`                 |
 | Actions                | Verbo + substantivo              | `ImportExpensesFromCsv`                     |
@@ -173,25 +182,34 @@ Todo payload e toda resposta usam **`snake_case`** — padrão nativo do Laravel
 ### Conversão de Moeda
 
 - Despesas em **BRL**: `exchange_rate = 1`, `amount_brl_cents = amount_cents`, `conversion_status = converted` na criação.
-- Despesas em **USD**: a despesa é **salva primeiro** com `conversion_status = pending` e a conversão é despachada para a fila (`ConvertExpenseCurrencyJob`). A indisponibilidade da API de câmbio **nunca** impede o cadastro.
-- O Job usa `$tries` e `backoff()` exponencial. Ao esgotar as tentativas, `failed()` marca `conversion_status = failed`. Um comando Artisan (`expenses:retry-conversions`) re-enfileira as falhas.
-- A cotação usada é a da **data da despesa**. Cotações obtidas são persistidas em `exchange_rates` (moeda + data, único) e reutilizadas — a API externa é consultada no máximo uma vez por data.
-- Provedor: **API PTAX do Banco Central**, atrás da interface `Contracts\ExchangeRateProvider`, registrada no container. Trocar de provedor não pode exigir mudança fora de `Services/ExchangeRates` e do binding.
-- Datas sem cotação (fim de semana/feriado): usar o último dia útil anterior. Decisão documentada no README como pergunta ao negócio.
+- Despesas em **USD**: a despesa é **salva primeiro** com `conversion_status = pending` e, depois do commit, `ConvertExpenseCurrencyJob` é enfileirado. A indisponibilidade da API de câmbio **nunca** impede o cadastro.
+- O job usa os atributos `#[Tries(5)]` e `#[Backoff(60, 300, 900, 3600)]`, é único por despesa (`ShouldBeUnique`) e, ao esgotar as tentativas, `failed()` marca `conversion_status = failed`. Provedor sem cotação para a data (`ExchangeRateUnavailableException`) falha na hora, sem novas tentativas.
+- `ConvertExpenseCurrency` é idempotente e trava a linha (`lockForUpdate`): executar duas vezes não converte duas vezes. O valor em BRL é rateado de novo com o `AllocationSplitter`.
+- Rede de segurança: `expenses:convert-pending` (agendado a cada 10 min em `routes/console.php`) reenfileira pendentes cuja cotação já existe; com `--failed`, reprocessa também as que falharam. Reprocessamento manual: `POST /api/expenses/{id}/retry-conversion`.
+- A cotação usada é a da **data da despesa**, só depois que o dia termina no horário de Brasília (`services.ptax.timezone`). Despesa de hoje fica pendente e é convertida pela varredura no dia seguinte.
+- Cotações obtidas são persistidas em `exchange_rates` (moeda + data pedida, único) e reutilizadas — a API externa é consultada no máximo uma vez por data.
+- Provedor: **API PTAX do Banco Central** (cotação de **venda**), atrás da interface `Contracts\ExchangeRateProvider`, registrada no `AppServiceProvider`. Trocar de provedor não exige mudança fora de `Services/ExchangeRates` e do binding.
+- Datas sem cotação (fim de semana/feriado): o provedor consulta os 7 dias até a data e usa a cotação mais recente. A data efetivamente usada fica em `expenses.exchange_rate_date`.
+- Conversão com **bcmath** (`CurrencyConverter`), arredondamento comercial: centavos x cotação estouraria `int64` e float perde precisão.
 - Chamadas HTTP sempre com `timeout()` explícito. Falha de rede lança exceção — o retry é responsabilidade da fila, não do cliente HTTP.
 
 ### Importação CSV
 
-- Formato: `data;descricao;fornecedor;valor;moeda;rateio`, com cabeçalho. Rateio: `slug-unidade:percentual|slug-unidade:percentual`.
-- Unidades são referenciadas no CSV pelo `slug` (único).
-- Cada linha é validada **isoladamente** (`Validator::make()` com as mesmas regras da criação) e criada pela mesma `CreateExpense` Action, cada uma em sua própria transação. Uma linha inválida **nunca** interrompe as demais.
-- Retorno: `ImportReport` com total de linhas, quantidade importada e a lista de erros por **número da linha** (considerando o cabeçalho) com as mensagens.
-- Tratar BOM UTF-8, linhas em branco e quebras de linha `\r\n`.
+- Formato: `data;descricao;fornecedor;valor;moeda;rateio`, com cabeçalho. Rateio: `slug-unidade:percentual|slug-unidade:percentual`. Exemplo em `docs/examples/despesas-setembro.csv`.
+- Unidades são referenciadas no CSV pelo `slug` (único), resolvido com uma única consulta para o arquivo inteiro.
+- Cada linha é validada **isoladamente** com as mesmas `ExpenseRules` da API (`Validator::make()`) e criada pela mesma `CreateExpense` Action, cada uma em sua própria transação. Uma linha inválida **nunca** interrompe as demais.
+- Moeda e slug aceitam minúsculas; descrição e fornecedor têm espaços repetidos colapsados, como na API.
+- Arquivo vazio ou com cabeçalho diferente do esperado é recusado inteiro (`InvalidCsvFileException`, HTTP 422).
+- Retorno: `ImportReport` com total de linhas, quantidade importada e a lista de erros por **número da linha no arquivo** (cabeçalho = linha 1), com o conteúdo original e as mensagens em português.
+- `Services/Csv/CsvReader` trata BOM UTF-8, linhas em branco (sem deslocar a numeração), `\r\n` e arquivos em Windows-1252. Cada registro ocupa uma linha física.
+- Importação síncrona, dentro da requisição (limite de 5 MB). Arquivos grandes seriam processados em um job, com o relatório consultado depois.
 
 ### Relatório
 
-- Total em BRL por unidade num período (`date_from`, `date_to`, inclusivos), calculado **no banco** (`SUM ... GROUP BY`), nunca somando coleções em PHP.
-- Considera apenas despesas com `conversion_status = converted`. O relatório informa separadamente a quantidade de despesas pendentes/falhas no período, para deixar claro quando o total está incompleto.
+- Total em BRL por unidade num período (`date_from`, `date_to`, inclusivos), calculado **no banco** (`SUM ... GROUP BY` sobre `expense_allocations.amount_brl_cents`), nunca somando coleções em PHP. `GET /api/reports/unit-totals`.
+- Considera apenas despesas com `conversion_status = converted`. O relatório informa separadamente pendentes e falhas do período, com a soma na moeda original, e `is_complete = false` enquanto houver alguma.
+- Todas as unidades aparecem, inclusive as sem despesa no período (total zero), ordenadas do maior total para o menor.
+- Participação de cada unidade em pontos-base, com arredondamento comercial: a soma das participações pode diferir de 100% em centésimos; os totais em centavos sempre fecham.
 - Uma única Action (`GetUnitTotalsReport`) atende API e interface.
 
 ---
@@ -204,16 +222,18 @@ Todo payload e toda resposta usam **`snake_case`** — padrão nativo do Laravel
 - Chaves estrangeiras com `constrained()` e comportamento de delete explícito (`restrictOnDelete()` para unidades com despesas).
 - Índices em colunas usadas em filtros (`expenses.date`, `expense_allocations.unit_id`).
 - Enums nativos do PHP com `casts()` no model.
-- `$fillable` explícito em todo model. Nunca `$guarded = []`.
-- Relacionamentos com tipo de retorno (`: HasMany`, `: BelongsTo`).
-- Evite N+1: use `with()` ao carregar relacionamentos em listagens. Ative `Model::preventLazyLoading()` fora de produção.
+- Campos preenchíveis declarados com o atributo `#[Fillable([...])]` (Laravel 13). Nunca `#[Unguarded]` ou `$guarded = []`.
+- Relacionamentos com tipo de retorno e generics para o Larastan (`@return HasMany<Unit, $this>`).
+- Evite N+1: use `with()` ao carregar relacionamentos em listagens. `Model::shouldBeStrict()` está ativo fora de produção e lança exceção em lazy loading.
+- Relacionamentos cuja ordem importa declaram `orderBy()` na própria relação: sem `ORDER BY`, o MySQL devolve as linhas na ordem do índice usado.
+- Agregações (`sum`, `avg`) do MySQL chegam como string pelo PDO: converta explicitamente para `int`.
 
 ```php
+#[Fillable(['description', 'supplier', 'date', 'amount_cents', 'currency'])]
 final class Expense extends Model
 {
+    /** @use HasFactory<ExpenseFactory> */
     use HasFactory;
-
-    protected $fillable = ['description', 'supplier', 'date', 'amount_cents', 'currency'];
 
     protected function casts(): array
     {
@@ -224,6 +244,9 @@ final class Expense extends Model
         ];
     }
 
+    /**
+     * @return HasMany<ExpenseAllocation, $this>
+     */
     public function allocations(): HasMany
     {
         return $this->hasMany(ExpenseAllocation::class);
@@ -233,7 +256,20 @@ final class Expense extends Model
 
 ### Controllers
 
-Controllers são finos: recebem o Form Request, chamam a Action e retornam o Resource. Sem query, sem regra, sem `try/catch` de domínio.
+Controllers são finos: recebem o Form Request, chamam a Action e retornam o Resource. Sem regra de negócio, sem `try/catch` de domínio.
+
+- **CRUD simples** (empresas, unidades) usa Eloquent direto no controller (`Company::create($request->validated())`). Criar uma Action que só repassa para o model é indireção sem ganho.
+- **Actions** entram quando há regra de negócio (rateio, conversão, importação, relatório) ou quando a mesma operação é chamada por mais de um ponto de entrada (API, Livewire, CSV).
+- Rotas com `Route::apiResource()` e route model binding (`show(Company $company)`) — registro inexistente vira 404 automaticamente.
+- Remoção bloqueada por dependência lança `ResourceInUseException` (estende `ConflictHttpException`, HTTP 409).
+
+### Contrato de erro da API
+
+- Todo erro responde `{"message": "..."}` em português; validação acrescenta `errors` por campo (422).
+- `App\Exceptions\ApiExceptionRenderer` (registrado em `bootstrap/app.php`) traduz os erros do framework: registro inexistente (`Empresa não encontrada.`, sem expor a classe do model), rota inexistente, método não permitido (com `Allow`), corpo grande demais, 401, 403 e 429.
+- Erros 4xx nunca levam trace, nem com `APP_DEBUG=true`: são erros previstos do cliente. Só o 500 mostra o trace em desenvolvimento; em produção, `Erro interno do servidor.`.
+- Exceções de domínio estendem as exceções HTTP do Symfony com a mensagem em português — o renderer só remove o trace.
+- JSON malformado no corpo responde 400 (`EnsureValidJsonBody`), em vez de um 422 apontando campos ausentes.
 
 ```php
 final class ExpenseController extends Controller
@@ -249,7 +285,7 @@ final class ExpenseController extends Controller
 
 ### Form Requests
 
-Toda entrada passa por um Form Request. Regras que dependem de vários campos (soma = 100%, unidade duplicada) ficam em `after()`.
+Toda entrada passa por um Form Request. Regras que dependem de vários campos (soma = 100%) ficam em `after()`. Form Requests de criação expõem `toData()`, que devolve um objeto de `app/Data` já normalizado (centavos, pontos-base, enums) para a Action.
 
 ```php
 final class StoreExpenseRequest extends FormRequest
@@ -257,18 +293,21 @@ final class StoreExpenseRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'description' => ['required', 'string', 'max:255'],
-            'supplier' => ['required', 'string', 'max:255'],
             'date' => ['required', 'date_format:Y-m-d'],
-            'amount' => ['required', 'decimal:0,2', 'gt:0'],
+            // string + numeric + regex: formato exato que Decimal converte sem float
+            'amount' => ['required', 'string', 'numeric', 'regex:/^\d{1,12}(\.\d{1,2})?$/', 'gt:0'],
             'currency' => ['required', Rule::enum(Currency::class)],
-            'allocations' => ['required', 'array', 'min:1'],
             'allocations.*.unit_id' => ['required', 'integer', 'distinct', 'exists:units,id'],
-            'allocations.*.percentage' => ['required', 'decimal:0,2', 'gt:0', 'lte:100'],
+            // ...
         ];
     }
+
+    public function toData(): ExpenseData { /* ... */ }
 }
 ```
+
+- Valores decimais chegam como **string** (`"1500.00"`); número JSON é recusado.
+- `gt`/`lt`/`between` só comparam numericamente quando a regra `numeric` está presente — sem ela, comparam o **tamanho** da string.
 
 ### Actions
 
@@ -283,6 +322,15 @@ final class StoreExpenseRequest extends FormRequest
 - A conversão de centavos para string decimal acontece aqui.
 - Relacionamentos com `whenLoaded()`.
 
+### Documentação da API
+
+- OpenAPI gerado automaticamente pelo **Scramble** a partir de rotas, Form Requests e API Resources. UI em `/docs/api`, especificação em `/docs/api.json`, pública em todos os ambientes (gate `viewApiDocs`).
+- Não duplique o contrato em anotações: tipos, validação e formato de resposta vêm do código.
+- Todo controller da API recebe `#[Group('Nome')]`; todo método, um PHPDoc cuja primeira linha é o resumo em português (`Listar empresas`).
+- Status diferente de 200 que o Scramble não infere: `/** @status 201 */` acima do `return`.
+- Erros HTTP de domínio estendem as exceções HTTP do Symfony (ex.: `ConflictHttpException`) para aparecerem na documentação.
+- Descrição de campo de entrada: comentário acima da regra no Form Request.
+
 ### Autenticação
 
 - Rotas da API protegidas por `auth:sanctum`. Token emitido em `POST /api/login`.
@@ -292,67 +340,82 @@ final class StoreExpenseRequest extends FormRequest
 
 ## Interface (Blade + Livewire)
 
+### Tokens de design
+
+- Paleta `ds-{cor}-{tom}` no `@theme` de `resources/css/app.css`: `primary` (laranja Grid, #FE8400 = 500), `gray`, `blue`, `green`, `yellow`, `red` (50–900), mais `ds-black` e `ds-white`.
+- Papéis: success = green, warning = yellow, danger = red, info = blue, interface = gray, ação principal e item ativo = primary.
+- Nunca cores arbitrárias (`bg-[#...]`) nem a paleta padrão do Tailwind (`bg-blue-600`) nas views.
+- Texto sobre `primary-500` é `ds-black`: branco tem contraste 2.47:1 e reprova no WCAG AA. Links em laranja usam `primary-700`.
+- Foco: `focus-visible:ring-2 ring-ds-primary-600` (o 500 não atinge 3:1 contra o branco). Campos: borda `primary-600` + anel `primary-500/25`.
+- Fontes: Inter (`font-sans`) e JetBrains Mono (`font-mono`, identificadores). Raio: `rounded-lg` em controles, `rounded-xl` em cards e tabela, `rounded-2xl` em modal.
+- O Tailwind só gera classes escritas por extenso: nunca monte nome de classe por concatenação (`"bg-ds-{$cor}-100"`). Use mapas com as classes completas; exceção declarada em `@source inline()`.
+
 ### Componentes base
 
-Todos os elementos visuais reutilizáveis ficam em `resources/views/components/ui/` como Blade components anônimos. **Nunca** estilize um botão, input ou spinner manualmente fora deles.
+Blade components anônimos em `resources/views/components/ui/`. Catálogo com todas as variantes em **`/ui`** (só em ambiente local; `?open=nome` abre um modal). **Nunca** estilize botão, campo, badge ou tabela manualmente fora deles.
 
-| Componente     | Props                                                                                             |
-| -------------- | ------------------------------------------------------------------------------------------------- |
-| `x-ui.button`  | `variant` (`primary`, `outline`, `ghost`, `danger`), `size` (`sm`, `md`, `lg`), `full`, `loading` |
-| `x-ui.input`   | `label`, `name`, `error` (lê de `$errors` automaticamente)                                        |
-| `x-ui.select`  | `label`, `name`, `options`, `placeholder`                                                         |
-| `x-ui.spinner` | `size`                                                                                            |
-| `x-ui.card`    | slot + `title`                                                                                    |
-| `x-ui.table`   | slots `head` e `body`                                                                             |
-| `x-ui.modal`   | `name`, controlado por Alpine.js                                                                  |
+| Componente | Props principais |
+| --- | --- |
+| `x-ui.button` | `variant` (`primary`, `secondary`, `outline`, `ghost`, `danger`, `danger-outline`, `link`), `size` (`sm`, `md`, `lg`), `icon`, `icon-direction`, `icon-only` (exige `aria-label`), `full`, `loading`, `href` |
+| `x-ui.input` | `name`, `label`, `hint`, `error`, `required`, `icon`, `icon-direction`, `password`, `mono`, `size`, `variant` (`default`, `soft`), `full` |
+| `x-ui.select` | `name`, `label`, `hint`, `error`, `required`, `options` (`[valor => rótulo]`), `placeholder`, `value`, `size`, `full` |
+| `x-ui.textarea` / `x-ui.checkbox` / `x-ui.segmented` | campo de texto longo / caixa de seleção / escolha única lado a lado (radios) |
+| `x-ui.date-picker` | `name`, `label`, `hint`, `error`, `required`, `placeholder`, `value` (`AAAA-MM-DD`), `min`, `max`, `size`, `full` |
+| `x-ui.date-range-picker` | idem, com valor `['from' => ..., 'to' => ...]` e atalhos (Hoje, Últimos 7/30 dias, Este mês, Mês passado, Este ano) |
+| `x-ui.field` | moldura (rótulo, `*`, ajuda, erro) para controles customizados |
+| `x-ui.badge` / `x-ui.status-badge` | `variant` (`neutral`, `primary`, `success`, `warning`, `danger`, `info`, `outline`, `mono`), `size`, `icon`, `dot` / `status` (`ConversionStatus`) |
+| `x-ui.alert` | `variant` (`info`, `success`, `warning`, `danger`), `title`, `icon`, slot `actions` |
+| `x-ui.card` / `x-ui.stat` / `x-ui.empty` | superfície com título e slots `actions`/`footer` / indicador numérico / estado vazio |
+| `x-ui.page-header` | `title`, `description`, `breadcrumbs` (`[rótulo => url]`), slot `actions` |
+| `x-ui.table` + `.toolbar`, `.head`, `.row`, `.cell`, `.empty`, `.loading` | slots `toolbar`, `head`, `footer`; `head` com `sortable`/`sorted-by`/`direction` chama `sortBy()` |
+| `x-ui.pagination` | `paginator` (retorno de `->paginate()`), `livewire` (usa `gotoPage()`), `label` |
+| `x-ui.modal` / `x-ui.confirm` | abertos por evento `open-modal` com o `name`; confirm com `action` (método Livewire) e `danger` |
+| `x-ui.dropdown` + `.item`, `.separator` | slot `trigger`; item com `icon`, `danger`, `href` |
+| `x-ui.logo` | `size` (`sm`, `md`, `lg`, `xl`), `rounded` (`none`, `sm`, `md`, `lg`, `full`), `label` (sem ele, decorativo). Ícone em `size-9/16` e raio em `%` do lado (tokens `--radius-mark-*`): a proporção se mantém em qualquer tamanho |
+| `x-ui.toaster` | já no layout; dispare com `$this->dispatch('toast', type: 'success', message: '...')` |
 
-```blade
-{{-- resources/views/components/ui/button.blade.php --}}
-@props(['variant' => 'primary', 'size' => 'md', 'full' => false, 'loading' => false])
+Convenções:
 
-@php
-    $variants = [
-        'primary' => 'bg-blue-600 text-white hover:bg-blue-700',
-        'outline' => 'border border-blue-600 text-blue-600 hover:bg-blue-50',
-        'ghost' => 'text-gray-700 hover:bg-gray-100',
-        'danger' => 'bg-red-600 text-white hover:bg-red-700',
-    ];
-    $sizes = [
-        'sm' => 'h-8 px-3 text-xs',
-        'md' => 'h-10 px-4 text-sm',
-        'lg' => 'h-12 px-6 text-base',
-    ];
-@endphp
+- Props em kebab-case (`icon-only`). Tudo o que não é prop vai para o elemento nativo (`wire:model`, `wire:click`, `x-on:*`, `aria-*`, `type`).
+- Em campos, `class` vai para o **invólucro** (layout: `w-72`, `col-span-2`); aparência vem das props.
+- `name` dos campos vem do atributo ou do `wire:model`; o erro é lido de `$errors` por esse nome, com `aria-invalid` e `aria-describedby`.
+- Botão com `wire:click` mostra loading e fica bloqueado só enquanto a requisição que **ele** disparou roda (atributo `data-loading` do Livewire, estilizado com `data-loading:` / `group-data-loading/button:`): botões com a mesma chamada, como "Próxima" e "Página 2", não entram em loading juntos. Com `wire:target` explícito, o loading segue a ação venha de onde vier (ex.: submit, cuja origem é o `<form>`).
+- Variante ou tamanho inválido lança exceção: erro de digitação aparece no desenvolvimento, não em produção.
+- Ícones Lucide pelo nome (`icon="plus"`), via `x-ui.icon`.
+- Tabelas: todas as colunas alinhadas à esquerda, inclusive valores (`numeric` só aplica algarismos de largura fixa). Exceção: colunas de ação e de badge (status, slug) usam `align="center"` no cabeçalho e na célula.
+- Ações da linha sempre num `x-ui.dropdown` aberto por botão `ellipsis` (`aria-label="Ações de {nome}"`), com ações destrutivas por último, após um separador e com `danger`.
+- Favicon (`public/favicon.svg`, `favicon.ico` 16/32/48 e `apple-touch-icon.png` 180) espelha o `x-ui.logo` com `rounded="md"`: raio de 25% e ícone em 9/16 do lado. O SVG é a fonte; ICO e PNG são gerados a partir dele. O `apple-touch-icon` não tem cantos arredondados, porque o iOS aplica a própria máscara. Mudou a marca, atualize os dois.
+- Layout da aplicação em `resources/views/layouts/app.blade.php` (`layouts::app`, usado pelos componentes Livewire de página).
 
-<button
-    {{ $attributes->merge(['type' => 'button'])->class([
-        'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors disabled:pointer-events-none disabled:opacity-50',
-        $variants[$variant],
-        $sizes[$size],
-        'w-full' => $full,
-    ]) }}
->
-    @if ($loading)
-        <x-ui.spinner size="sm" />
-    @endif
-    {{ $slot }}
-</button>
-```
+Alpine e interatividade:
 
-Cores e espaçamentos vêm de tokens definidos no `@theme` do Tailwind v4 (`resources/css/app.css`). Não use valores arbitrários (`bg-[#123456]`) nas views.
+- O `<body>` tem `x-data`: diretivas Alpine (`x-on`, `$dispatch`) só funcionam dentro de um escopo `x-data`.
+- Livewire e Alpine são carregados pelo `resources/js/app.js` (ESM do Livewire + `@livewireScriptConfig` no layout), onde os componentes Alpine da aplicação são registrados com `Alpine.data()` antes do `Livewire.start()`.
+- Controles com estado próprio expõem o valor com `x-modelable`, para aceitar `wire:model` como um input nativo.
+- Painéis sobrepostos (calendários, menus) usam `x-teleport="body"` + `x-anchor`: dentro de um card com `overflow-hidden` eles seriam recortados. Clique no gatilho não conta como "clique fora".
+- Datas no JavaScript: nunca `toISOString()` para gerar `AAAA-MM-DD` (converte para UTC e muda o dia no Brasil); monte com as partes locais.
+- Depois de `</x-slot>` sempre quebre a linha: o Blade compila para `@endslot` sem espaço, e texto colado (`</x-slot>Texto`) quebra a diretiva e deixa um buffer de saída aberto.
 
 ### Componentes Livewire
 
-- Um componente por tela ou bloco com estado (`ExpenseForm`, `ExpenseList`, `CsvImport`, `UnitTotalsReport`).
-- O componente **só** orquestra: valida, chama a Action, atualiza o estado. Regra de negócio fica na Action.
+- Páginas são componentes Livewire em classe com sufixo `Page`, agrupados por domínio (`App\Livewire\Reports\UnitTotalsPage`, view em `resources/views/livewire/reports/unit-totals-page.blade.php`), registrados direto na rota (`Route::get('/reports', UnitTotalsPage::class)`) e com `#[Title]`.
+- O componente **só** orquestra: valida, chama a Action, atualiza o estado. Regra de negócio fica na Action — a página de relatório usa a mesma `GetUnitTotalsReport` da API.
+- Filtros e paginação ficam na URL com `#[Url]` (link compartilhável); valor inválido vindo da URL volta ao padrão no `mount()`.
+- Dados derivados com `#[Computed]` (≈ `useMemo`); invalide com `unset($this->propriedade)` quando a entrada muda.
 - Formulários com **Form Objects** (`Livewire\Form`).
-- Estado de carregamento com `wire:loading` / `wire:target`.
-- Use `wire:model` padrão (sincroniza no submit); `wire:model.live` só quando a UI precisa reagir a cada tecla (ex.: soma do rateio em tempo real).
+- `<form novalidate>`: a validação é a do servidor (mesmas regras da API, mensagens em português); a nativa do navegador bloquearia o submit antes.
+- Propriedade pública e método nunca com o mesmo nome (`$sortBy` + `sortBy()`): no navegador, `$wire.sortBy` devolve a propriedade e a ação deixa de existir. Use `#[Url(as: ...)]` se o nome da URL importar.
+- Estado de carregamento com `wire:loading` / `wire:target` (ex.: `wire:loading.class="opacity-60"` no conteúdo que recalcula).
+- Use `wire:model` padrão (sincroniza no submit); `wire:model.live` só quando a UI precisa reagir na hora (filtros, soma do rateio).
 - Interações puramente visuais (abrir modal, mostrar/ocultar) com **Alpine.js** no cliente — sem roundtrip ao servidor.
 - Comunicação entre componentes por eventos (`$this->dispatch()` + `#[On]`).
 - Propriedades públicas são enviadas ao navegador: nunca guarde dado sensível nelas, e trate-as como entrada do usuário (valide sempre).
+- Datas relativas ("hoje", "este mês") usam `config('app.business_timezone')` (America/Sao_Paulo); servidor e banco seguem em UTC.
 
----
+### Formatação para exibição
+
+- `App\Support\Format`: `money()` (`R$ 1.500,00`, `US$ 1.500,00`), `decimal()`, `percent()` (pontos-base → `31,9%`), `rate()` (cotação com 4 casas: `5,4123`) e `date()` (`01/09/2026`). Parte de inteiros e não depende da extensão intl.
+- Nas views: `@use('App\Support\Format')` e `{{ Format::money($cents) }}`. Nunca formate dinheiro com `number_format` sobre float.
 
 ## Testes
 
@@ -368,7 +431,10 @@ Prioridade de cobertura:
 Padrões:
 
 - Pest com `RefreshDatabase`; dados via **factories**, nunca inserts manuais.
-- HTTP externo **sempre** falseado com `Http::fake()` e `Http::preventStrayRequests()` — nenhum teste bate em API real.
+- HTTP externo **sempre** falseado com `Http::fake()` — `Http::preventStrayRequests()` está ativo no `TestCase` e faz qualquer requisição não simulada falhar. Helpers `fakePtax()` e `fakePtaxDown()` em `tests/Pest.php`.
+- A fila roda em modo `sync` nos testes: quem não testa o job em si usa `Queue::fake()`.
+- Regras que dependem de "hoje" fixam o relógio com `$this->travelTo()`.
+- Componentes Livewire com `Livewire::test()` (`->set()`, `->assertSee()`, `->assertHasErrors()`) e `Livewire::withQueryParams()` para filtros da URL.
 - `Queue::fake()` para verificar dispatch; teste o Job chamando `handle()` diretamente para verificar comportamento.
 - Um comportamento por teste, nome descrevendo a regra: `it('keeps the expense when the exchange API is down')`.
 - Banco de testes MySQL (mesmo engine de produção), não SQLite.
@@ -403,8 +469,8 @@ Workflow único em `.github/workflows/ci.yml`, disparado em `pull_request` para 
 
 | Etapa            | Comando                                    |
 | ---------------- | ------------------------------------------ |
-| Formatação       | `./vendor/bin/pint --test`                 |
-| Análise estática | `./vendor/bin/phpstan analyse`             |
+| Formatação       | `composer format:check`                    |
+| Análise estática | `composer analyse`                         |
 | Build de assets  | `npm ci && npm run build`                  |
 | Unit + Feature   | `php artisan test --exclude-group=browser` |
 | E2E (navegador)  | `php artisan test --group=browser`         |
@@ -416,16 +482,25 @@ Workflow único em `.github/workflows/ci.yml`, disparado em `pull_request` para 
 ### Deploy
 
 - **Não há workflow de deploy no GitHub Actions.** O Railway fica conectado ao repositório e cada environment observa sua branch: `staging` → environment `staging`, `main` → environment `production`.
-- **"Wait for CI" ativado** nos serviços: o Railway só faz deploy de um commit cujos checks do GitHub passaram.
+- **"Wait for CI" ativado** nos serviços: o Railway só faz deploy de um commit cujos workflows do GitHub passaram. Ele só enxerga workflows disparados por `push`, por isso o `ci.yml` roda também em push para `main` e `staging` (o job `source branch` é pulado no push — job pulado não bloqueia).
 - Aplicação é **um único deploy** (Laravel renderiza Blade/Livewire; o Vite só gera assets no build). Não existe deploy separado de frontend, nem ordem entre front e back.
-- Serviços por environment, todos a partir do mesmo `Dockerfile`:
-  - `web` — servidor HTTP da aplicação.
-  - `worker` — `php artisan queue:work`, com config própria (`railway.worker.json`).
-  - `mysql` — banco gerenciado do Railway, um por environment.
-- `preDeployCommand: php artisan migrate --force` — roda uma vez antes da nova versão entrar no ar; se falhar, o deploy aborta e a versão anterior continua servindo. Nunca rodar migration no comando de start.
+- **Dockerfile** em estágios: `base` (dev, usado pelo compose com o código em volume), `vendor` (`composer install --no-dev`), `assets` (`npm run build`; precisa do `vendor/` porque o `app.js` importa o Livewire de lá) e `production` (último estágio, o que o Railway constrói). Na inicialização a imagem roda `artisan optimize` e `storage:link` (`AUTORUN_ENABLED=true`); a migration automática da imagem fica desligada (`AUTORUN_LARAVEL_MIGRATION=false`).
+- Config as Code do Railway (`railway.json`) foi descontinuado e não vale para serviços novos: a configuração dos serviços é feita pela API/painel e registrada aqui.
+
+Serviços por environment, todos da mesma imagem:
+
+| Serviço | Start | Configuração |
+| --- | --- | --- |
+| `web` | padrão da imagem (Nginx + PHP-FPM, porta 8080) | `preDeployCommand: php artisan migrate --force`, healthcheck `/up`, domínio público |
+| `worker` | `php /var/www/html/artisan queue:work` | restart sempre; sem domínio |
+| `scheduler` | `php /var/www/html/artisan schedule:work` | restart sempre; roda `expenses:convert-pending` a cada 10 min |
+| `mysql` | banco gerenciado do Railway | um por environment |
+
+- `preDeployCommand` roda uma vez antes da nova versão entrar no ar; se falhar, o deploy aborta e a versão anterior continua servindo. Nunca rodar migration no comando de start.
 - `healthcheckPath: /up` (rota de health nativa do Laravel) — a troca de versão só acontece se a nova instância responder.
 - Migrations devem ser **compatíveis com a versão anterior do código** durante o deploy (adicionar coluna nullable primeiro, remover só num deploy posterior).
-- Variáveis de ambiente configuradas por environment no Railway. `APP_DEBUG=false` em produção, `APP_KEY` distinta por environment.
+- O HTTPS termina no proxy do Railway: `trustProxies(at: '*')` em `bootstrap/app.php` faz o Laravel gerar URLs `https`.
+- Variáveis por environment (compartilhadas entre os serviços): `APP_ENV` (`staging`/`production`), `APP_KEY` distinta por environment, `APP_DEBUG=false`, `APP_URL`, `APP_LOCALE=pt_BR`, `LOG_CHANNEL=stderr`, `DB_*` por referência ao MySQL do environment (`${{MySQL.MYSQLHOST}}`...), `SESSION_DRIVER`, `CACHE_STORE` e `QUEUE_CONNECTION` = `database`.
 
 ---
 
@@ -456,8 +531,9 @@ Workflow único em `.github/workflows/ci.yml`, disparado em `pull_request` para 
 
 ### Interface
 
-- Botão, input ou spinner estilizado manualmente fora de `components/ui/`.
-- Cores hardcoded ou valores arbitrários do Tailwind nas views.
+- Botão, campo, badge ou tabela estilizados manualmente fora de `components/ui/`.
+- Cores hardcoded, valores arbitrários de cor ou a paleta padrão do Tailwind nas views.
+- Nome de classe do Tailwind montado por concatenação.
 - `wire:model.live` sem necessidade real.
 - Lógica de negócio em Alpine.js ou em `@php` nas views.
 - Dado sensível em propriedade pública de componente Livewire.
@@ -469,3 +545,4 @@ Workflow único em `.github/workflows/ci.yml`, disparado em `pull_request` para 
 - Filtro `paths:` em workflow cujo check é obrigatório.
 - Migration no comando de start do container, ou migration que quebra a versão anterior do código.
 - `APP_DEBUG=true` em produção.
+- Workflow do CI sem trigger `push` em `main`/`staging`: o "Wait for CI" do Railway deixa de funcionar.
