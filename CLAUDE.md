@@ -481,16 +481,25 @@ Workflow único em `.github/workflows/ci.yml`, disparado em `pull_request` para 
 ### Deploy
 
 - **Não há workflow de deploy no GitHub Actions.** O Railway fica conectado ao repositório e cada environment observa sua branch: `staging` → environment `staging`, `main` → environment `production`.
-- **"Wait for CI" ativado** nos serviços: o Railway só faz deploy de um commit cujos checks do GitHub passaram.
+- **"Wait for CI" ativado** nos serviços: o Railway só faz deploy de um commit cujos workflows do GitHub passaram. Ele só enxerga workflows disparados por `push`, por isso o `ci.yml` roda também em push para `main` e `staging` (o job `source branch` é pulado no push — job pulado não bloqueia).
 - Aplicação é **um único deploy** (Laravel renderiza Blade/Livewire; o Vite só gera assets no build). Não existe deploy separado de frontend, nem ordem entre front e back.
-- Serviços por environment, todos a partir do mesmo `Dockerfile`:
-  - `web` — servidor HTTP da aplicação.
-  - `worker` — `php artisan queue:work`, com config própria (`railway.worker.json`).
-  - `mysql` — banco gerenciado do Railway, um por environment.
-- `preDeployCommand: php artisan migrate --force` — roda uma vez antes da nova versão entrar no ar; se falhar, o deploy aborta e a versão anterior continua servindo. Nunca rodar migration no comando de start.
+- **Dockerfile** em estágios: `base` (dev, usado pelo compose com o código em volume), `vendor` (`composer install --no-dev`), `assets` (`npm run build`; precisa do `vendor/` porque o `app.js` importa o Livewire de lá) e `production` (último estágio, o que o Railway constrói). Na inicialização a imagem roda `artisan optimize` e `storage:link` (`AUTORUN_ENABLED=true`); a migration automática da imagem fica desligada (`AUTORUN_LARAVEL_MIGRATION=false`).
+- Config as Code do Railway (`railway.json`) foi descontinuado e não vale para serviços novos: a configuração dos serviços é feita pela API/painel e registrada aqui.
+
+Serviços por environment, todos da mesma imagem:
+
+| Serviço | Start | Configuração |
+| --- | --- | --- |
+| `web` | padrão da imagem (Nginx + PHP-FPM, porta 8080) | `preDeployCommand: php artisan migrate --force`, healthcheck `/up`, domínio público |
+| `worker` | `php /var/www/html/artisan queue:work` | restart sempre; sem domínio |
+| `scheduler` | `php /var/www/html/artisan schedule:work` | restart sempre; roda `expenses:convert-pending` a cada 10 min |
+| `mysql` | banco gerenciado do Railway | um por environment |
+
+- `preDeployCommand` roda uma vez antes da nova versão entrar no ar; se falhar, o deploy aborta e a versão anterior continua servindo. Nunca rodar migration no comando de start.
 - `healthcheckPath: /up` (rota de health nativa do Laravel) — a troca de versão só acontece se a nova instância responder.
 - Migrations devem ser **compatíveis com a versão anterior do código** durante o deploy (adicionar coluna nullable primeiro, remover só num deploy posterior).
-- Variáveis de ambiente configuradas por environment no Railway. `APP_DEBUG=false` em produção, `APP_KEY` distinta por environment.
+- O HTTPS termina no proxy do Railway: `trustProxies(at: '*')` em `bootstrap/app.php` faz o Laravel gerar URLs `https`.
+- Variáveis por environment (compartilhadas entre os serviços): `APP_ENV` (`staging`/`production`), `APP_KEY` distinta por environment, `APP_DEBUG=false`, `APP_URL`, `APP_LOCALE=pt_BR`, `LOG_CHANNEL=stderr`, `DB_*` por referência ao MySQL do environment (`${{MySQL.MYSQLHOST}}`...), `SESSION_DRIVER`, `CACHE_STORE` e `QUEUE_CONNECTION` = `database`.
 
 ---
 
@@ -535,3 +544,4 @@ Workflow único em `.github/workflows/ci.yml`, disparado em `pull_request` para 
 - Filtro `paths:` em workflow cujo check é obrigatório.
 - Migration no comando de start do container, ou migration que quebra a versão anterior do código.
 - `APP_DEBUG=true` em produção.
+- Workflow do CI sem trigger `push` em `main`/`staging`: o "Wait for CI" do Railway deixa de funcionar.
