@@ -51,29 +51,35 @@
     </p>
 
     @if ($paginator->hasPages())
-        <nav aria-label="Paginação" class="flex items-center gap-1">
-            <x-ui.button variant="outline" size="sm" icon="chevrons-left" icon-only aria-label="Primeira página"
-                :disabled="$paginator->onFirstPage()" :attributes="new Illuminate\View\ComponentAttributeBag($paginator->onFirstPage() ? [] : $goTo(1))" />
+        <nav aria-label="Paginação" class="flex items-center justify-between gap-1 sm:justify-start">
+            {{-- Celular: só anterior, "página X de Y" e próxima; números e extremos a partir de sm --}}
+            <span class="hidden sm:contents">
+                <x-ui.button variant="outline" size="sm" icon="chevrons-left" icon-only aria-label="Primeira página"
+                    :disabled="$paginator->onFirstPage()" :attributes="new Illuminate\View\ComponentAttributeBag($paginator->onFirstPage() ? [] : $goTo(1))" />
+            </span>
             <x-ui.button variant="outline" size="sm" icon="chevron-left" icon-only aria-label="Página anterior"
                 :disabled="$paginator->onFirstPage()" :attributes="new Illuminate\View\ComponentAttributeBag($paginator->onFirstPage() ? [] : $goTo($current - 1))" />
-
-            @foreach ($pages as $page)
-                @if ($page === '...')
-                    <span class="flex size-8 items-center justify-center text-ds-gray-400" aria-hidden="true">
-                        <x-ui.icon name="ellipsis" class="size-4" />
-                    </span>
-                @elseif ($page === $current)
-                    <x-ui.button variant="secondary" size="sm" class="min-w-8 px-2" aria-current="page" aria-label="Página {{ $page }}, atual">{{ $page }}</x-ui.button>
-                @else
-                    <x-ui.button variant="ghost" size="sm" class="min-w-8 px-2" aria-label="Página {{ $page }}"
-                        :attributes="new Illuminate\View\ComponentAttributeBag($goTo($page))">{{ $page }}</x-ui.button>
-                @endif
-            @endforeach
-
+            <span class="px-3 text-sm text-ds-gray-600 tabular-nums sm:hidden">{{ $current }} de {{ $last }}</span>
+            <span class="hidden items-center gap-1 sm:flex">
+                @foreach ($pages as $page)
+                    @if ($page === '...')
+                        <span class="flex size-8 items-center justify-center text-ds-gray-400" aria-hidden="true">
+                            <x-ui.icon name="ellipsis" class="size-4" />
+                        </span>
+                    @elseif ($page === $current)
+                        <x-ui.button variant="secondary" size="sm" class="min-w-8 px-2" aria-current="page" aria-label="Página {{ $page }}, atual">{{ $page }}</x-ui.button>
+                    @else
+                        <x-ui.button variant="ghost" size="sm" class="min-w-8 px-2" aria-label="Página {{ $page }}"
+                            :attributes="new Illuminate\View\ComponentAttributeBag($goTo($page))">{{ $page }}</x-ui.button>
+                    @endif
+                @endforeach
+            </span>
             <x-ui.button variant="outline" size="sm" icon="chevron-right" icon-only aria-label="Próxima página"
                 :disabled="! $paginator->hasMorePages()" :attributes="new Illuminate\View\ComponentAttributeBag($paginator->hasMorePages() ? $goTo($current + 1) : [])" />
-            <x-ui.button variant="outline" size="sm" icon="chevrons-right" icon-only aria-label="Última página"
-                :disabled="! $paginator->hasMorePages()" :attributes="new Illuminate\View\ComponentAttributeBag($paginator->hasMorePages() ? $goTo($last) : [])" />
+            <span class="hidden sm:contents">
+                <x-ui.button variant="outline" size="sm" icon="chevrons-right" icon-only aria-label="Última página"
+                    :disabled="! $paginator->hasMorePages()" :attributes="new Illuminate\View\ComponentAttributeBag($paginator->hasMorePages() ? $goTo($last) : [])" />
+            </span>
         </nav>
     @endif
 </div>

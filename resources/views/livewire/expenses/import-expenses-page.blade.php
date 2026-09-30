@@ -82,6 +82,22 @@
 
                     @if ($report['errors'] !== [])
                         <x-ui.table caption="Linhas com erro" class="rounded-none border-x-0 border-b-0">
+                            <x-slot:mobile>
+                                @foreach ($report['errors'] as $error)
+                                    <li wire:key="import-error-card-{{ $error['line'] }}" class="flex flex-col gap-2 px-4 py-3.5">
+                                        <x-ui.badge variant="mono" size="sm" class="self-start">Linha {{ $error['line'] }}</x-ui.badge>
+                                        <ul class="flex flex-col gap-1">
+                                            @foreach ($error['messages'] as $message)
+                                                <li class="flex items-start gap-2 text-sm text-ds-red-800">
+                                                    <x-ui.icon name="circle-x" class="mt-0.5 size-4 shrink-0 text-ds-red-600" /> {{ $message }}
+                                                </li>
+                                            @endforeach
+                                        </ul>
+                                        <p class="font-mono text-xs break-all text-ds-gray-500">{{ $error['content'] }}</p>
+                                    </li>
+                                @endforeach
+                            </x-slot:mobile>
+
                             <x-slot:head>
                                 <x-ui.table.head align="center">Linha</x-ui.table.head>
                                 <x-ui.table.head>Conteúdo</x-ui.table.head>

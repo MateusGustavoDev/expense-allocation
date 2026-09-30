@@ -27,61 +27,46 @@
 <head>
     @include('layouts.partials.head', ['title' => $title])
 </head>
-{{-- x-data no body: a página inteira é um escopo Alpine, então qualquer elemento pode usar x-on e $dispatch --}}
-<body class="min-h-screen" x-data>
+{{-- x-data no body: a página inteira é um escopo Alpine; menu controla a gaveta de navegação no celular --}}
+<body class="min-h-screen" x-data="{ menu: false }" x-on:keydown.escape.window="menu = false">
     <a href="#conteudo" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-60 focus:rounded-lg focus:bg-ds-white focus:px-4 focus:py-2 focus:shadow-lg">
         Pular para o conteúdo
     </a>
 
+    {{-- Celular: barra superior fixa com a marca e o botão que abre a gaveta de navegação --}}
+    <header class="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-ds-gray-200 bg-ds-white/95 px-4 backdrop-blur lg:hidden">
+        <a href="{{ route('reports.index') }}" class="flex items-center gap-2">
+            <x-ui.logo size="sm" />
+            <span class="text-base font-bold text-ds-gray-900">Rateio</span>
+        </a>
+        <x-ui.button variant="ghost" icon="menu" icon-only aria-label="Abrir menu" x-on:click="menu = true" x-bind:aria-expanded="menu" aria-controls="menu-celular" />
+    </header>
+
+    <div x-show="menu" x-cloak id="menu-celular" class="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
+        <div x-show="menu" x-transition.opacity class="absolute inset-0 bg-ds-black/40" x-on:click="menu = false"></div>
+        <div
+            x-show="menu"
+            x-trap.inert.noscroll="menu"
+            x-transition:enter="transition duration-200 ease-out"
+            x-transition:enter-start="-translate-x-full"
+            x-transition:enter-end="translate-x-0"
+            x-transition:leave="transition duration-150 ease-in"
+            x-transition:leave-start="translate-x-0"
+            x-transition:leave-end="-translate-x-full"
+            class="relative h-full w-72 max-w-[85vw] overflow-y-auto bg-ds-white px-4 py-5 shadow-xl"
+        >
+            <x-ui.button variant="ghost" size="sm" icon="x" icon-only aria-label="Fechar menu" class="absolute top-4 right-3" x-on:click="menu = false" />
+            @include('layouts.partials.sidebar')
+        </div>
+    </div>
+
     <div class="flex min-h-screen">
-        <aside class="sticky top-0 hidden h-screen w-64 shrink-0 flex-col gap-7 border-r border-ds-gray-200 bg-ds-white px-4 py-5 lg:flex">
-            <a href="{{ Route::has('reports.index') ? route('reports.index') : url('/') }}" class="flex items-center gap-2.5 px-2">
-                <x-ui.logo />
-                <span class="flex flex-col leading-tight">
-                    <span class="text-base font-bold text-ds-gray-900">Rateio</span>
-                    <span class="text-xs text-ds-gray-500">Despesas compartilhadas</span>
-                </span>
-            </a>
-
-            <nav aria-label="Navegação principal" class="flex flex-col gap-6">
-                @foreach ($navigation as $group => $items)
-                    <div class="flex flex-col gap-0.5">
-                        <p class="px-3 pb-2 text-[11px] font-semibold tracking-wider text-ds-gray-500 uppercase">{{ $group }}</p>
-                        @foreach ($items as $item)
-                            @if (isset($item['url']))
-                                <x-ui.nav-item :href="url($item['url'])" :icon="$item['icon']" external>{{ $item['label'] }}</x-ui.nav-item>
-                            @else
-                                <x-ui.nav-item
-                                    :href="Route::has($item['route']) ? route($item['route']) : '#'"
-                                    :icon="$item['icon']"
-                                    :active="request()->routeIs(...($item['active'] ?? [$item['route']]))"
-                                >{{ $item['label'] }}</x-ui.nav-item>
-                            @endif
-                        @endforeach
-                    </div>
-                @endforeach
-            </nav>
-
-            @auth
-                {{-- -mx-4 + px-4: a linha ocupa a largura toda da sidebar (que tem px-4) sem mexer no conteúdo --}}
-                <div class="-mx-4 mt-auto border-t border-ds-gray-200 px-4 pt-4">
-                    <div class="flex items-center gap-2.5 px-2">
-                        <x-ui.avatar :name="auth()->user()->name" />
-                        <div class="flex min-w-0 flex-1 flex-col leading-tight">
-                            <span class="truncate text-sm font-medium text-ds-gray-900" title="{{ auth()->user()->name }}">{{ auth()->user()->name }}</span>
-                            <span class="truncate text-xs text-ds-gray-500" title="{{ auth()->user()->email }}">{{ auth()->user()->email }}</span>
-                        </div>
-                        <form method="POST" action="{{ route('logout') }}">
-                            @csrf
-                            <x-ui.button type="submit" variant="ghost" size="sm" icon="log-out" icon-only aria-label="Sair" title="Sair" />
-                        </form>
-                    </div>
-                </div>
-            @endauth
+        <aside class="sticky top-0 hidden h-screen w-64 shrink-0 border-r border-ds-gray-200 bg-ds-white px-4 py-5 lg:block">
+            @include('layouts.partials.sidebar')
         </aside>
 
         <main id="conteudo" class="min-w-0 flex-1">
-            <div class="mx-auto flex w-full max-w-7xl flex-col gap-6 px-6 py-8 lg:px-10">
+            <div class="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
                 {{ $slot }}
             </div>
         </main>
