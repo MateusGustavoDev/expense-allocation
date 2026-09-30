@@ -7,8 +7,13 @@
     <x-ui.button type="submit" wire:target="save">Salvar</x-ui.button>   loading automático do Livewire
     <x-ui.button :loading="$saving">Salvar</x-ui.button>                  loading manual
 
-    Com wire:click ou wire:target, o botão fica desabilitado e troca o ícone pelo spinner enquanto o
-    Livewire processa aquela ação. Botão só com ícone exige aria-label.
+    Loading automático, com o botão bloqueado e o spinner no lugar do ícone:
+    - wire:click: só enquanto a requisição disparada por ESTE botão roda (atributo data-loading que o
+      Livewire põe no elemento de origem). Dois botões com a mesma chamada, como "Próxima" e "Página 2",
+      não entram em loading juntos.
+    - wire:target: sempre que o Livewire processa aquela ação, venha de onde vier (ex.: submit do formulário,
+      cuja origem é o <form>, não o botão).
+    Botão só com ícone exige aria-label.
 --}}
 @props([
     'variant' => 'primary',
@@ -46,9 +51,8 @@
         throw new InvalidArgumentException('Botão só com ícone precisa de aria-label: o leitor de tela não tem outro texto para anunciar.');
     }
 
-    // Ação do Livewire que controla o loading automático: wire:target explícito ou o método do wire:click
-    $click = $attributes->wire('click')->value();
-    $target = $href ? null : ($attributes->get('wire:target') ?? ($click ? Str::before($click, '(') : null));
+    $target = $href ? null : $attributes->get('wire:target');
+    $selfLoading = ! $href && $target === null && $attributes->wire('click')->value() !== '';
 
     $tag = $href ? 'a' : 'button';
 
@@ -66,6 +70,7 @@
             'inline-flex shrink-0 cursor-pointer items-center justify-center rounded-lg font-medium whitespace-nowrap transition-colors select-none',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ds-primary-600 focus-visible:ring-offset-2',
             'disabled:pointer-events-none disabled:opacity-50',
+            'group/button data-loading:pointer-events-none data-loading:opacity-50' => $selfLoading,
             $variantClasses,
             $boxClasses,
             'w-full' => $full,
@@ -74,16 +79,16 @@
 
 <{{ $tag }} {{ $elementAttributes }}>
     @if ($iconOnly)
-        <x-ui.button.leading :icon="$icon" :loading="$loading" :target="$target" :size-class="$sizeConfig['icon']" />
+        <x-ui.button.leading :icon="$icon" :loading="$loading" :target="$target" :self-loading="$selfLoading" :size-class="$sizeConfig['icon']" />
     @else
         @if ($iconDirection === 'left')
-            <x-ui.button.leading :icon="$icon" :loading="$loading" :target="$target" :size-class="$sizeConfig['icon']" />
+            <x-ui.button.leading :icon="$icon" :loading="$loading" :target="$target" :self-loading="$selfLoading" :size-class="$sizeConfig['icon']" />
         @endif
 
         {{ $slot }}
 
         @if ($iconDirection === 'right')
-            <x-ui.button.leading :icon="$icon" :loading="$loading" :target="$target" :size-class="$sizeConfig['icon']" />
+            <x-ui.button.leading :icon="$icon" :loading="$loading" :target="$target" :self-loading="$selfLoading" :size-class="$sizeConfig['icon']" />
         @endif
     @endif
 </{{ $tag }}>

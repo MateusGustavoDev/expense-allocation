@@ -370,7 +370,7 @@ Convenções:
 - Props em kebab-case (`icon-only`). Tudo o que não é prop vai para o elemento nativo (`wire:model`, `wire:click`, `x-on:*`, `aria-*`, `type`).
 - Em campos, `class` vai para o **invólucro** (layout: `w-72`, `col-span-2`); aparência vem das props.
 - `name` dos campos vem do atributo ou do `wire:model`; o erro é lido de `$errors` por esse nome, com `aria-invalid` e `aria-describedby`.
-- Botão com `wire:click` ou `wire:target` mostra loading e fica desabilitado sozinho enquanto o Livewire processa a ação.
+- Botão com `wire:click` mostra loading e fica bloqueado só enquanto a requisição que **ele** disparou roda (atributo `data-loading` do Livewire, estilizado com `data-loading:` / `group-data-loading/button:`): botões com a mesma chamada, como "Próxima" e "Página 2", não entram em loading juntos. Com `wire:target` explícito, o loading segue a ação venha de onde vier (ex.: submit, cuja origem é o `<form>`).
 - Variante ou tamanho inválido lança exceção: erro de digitação aparece no desenvolvimento, não em produção.
 - Ícones Lucide pelo nome (`icon="plus"`), via `x-ui.icon`.
 - Tabelas: todas as colunas alinhadas à esquerda, inclusive valores (`numeric` só aplica algarismos de largura fixa). Exceção: colunas de ação e de badge (status, slug) usam `align="center"` no cabeçalho e na célula.
