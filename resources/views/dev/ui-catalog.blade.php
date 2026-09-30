@@ -195,6 +195,19 @@
                 </div>
             </div>
         </x-ui.card>
+        <x-ui.card title="Datas" description="Calendário em português; o valor é AAAA-MM-DD (período: from/to). Funcionam com wire:model.">
+            <div class="grid gap-5 md:grid-cols-2">
+                <x-ui.date-picker name="expense_date" label="Data da despesa" value="2026-09-01" required full />
+                <x-ui.date-range-picker name="period" label="Período" :value="['from' => '2026-09-01', 'to' => '2026-09-30']" full />
+                <x-ui.date-picker name="empty_date" label="Sem valor" hint="Não aceita datas futuras." :max="now()->toDateString()" full />
+                <x-ui.date-range-picker name="empty_period" label="Período sem valor" error="Informe o período do relatório." full />
+            </div>
+            <div class="mt-5 flex flex-wrap items-end gap-3">
+                @foreach ($sizes as $size)
+                    <x-ui.date-range-picker :name="'size_period_'.$size" :size="$size" :label="'Período '.$size" :value="['from' => '2026-09-01', 'to' => '2026-09-30']" />
+                @endforeach
+            </div>
+        </x-ui.card>
         <x-ui.card title="Tamanhos">
             <div class="flex flex-col gap-4">
                 @foreach ($sizes as $size)
