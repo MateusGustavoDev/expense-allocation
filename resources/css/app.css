@@ -3,7 +3,96 @@
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
+/* Amostras da paleta no catálogo /ui: classes montadas em loop precisam ser declaradas para serem geradas */
+@source inline('bg-ds-{primary,gray,blue,green,yellow,red}-{50,{100..900..100}}');
+
+/*
+ * Design tokens ds-*: use sempre as classes geradas (bg-ds-primary-500, text-ds-gray-600...).
+ * Nunca cores arbitrárias (bg-[#...]) nem a paleta padrão do Tailwind nas views.
+ * Primária: laranja Grid (#FE8400 = primary-500). Texto sobre primary-500 é escuro (ds-black):
+ * branco tem contraste 2.47:1 e reprova no WCAG AA.
+ * Papéis: success = green, warning = yellow, danger = red, info = blue, interface = gray.
+ */
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+
+  --color-ds-primary-50: #FFF7F1;
+  --color-ds-primary-100: #FFECE0;
+  --color-ds-primary-200: #FFDBC3;
+  --color-ds-primary-300: #FFC49D;
+  --color-ds-primary-400: #FFA566;
+  --color-ds-primary-500: #FE8400;
+  --color-ds-primary-600: #D36C00;
+  --color-ds-primary-700: #A65400;
+  --color-ds-primary-800: #7F3F00;
+  --color-ds-primary-900: #602E00;
+
+  --color-ds-gray-50: #FBFAF9;
+  --color-ds-gray-100: #F6F4F2;
+  --color-ds-gray-200: #E8E6E3;
+  --color-ds-gray-300: #D7D3D1;
+  --color-ds-gray-400: #A5A09D;
+  --color-ds-gray-500: #77726E;
+  --color-ds-gray-600: #58534F;
+  --color-ds-gray-700: #433F3B;
+  --color-ds-gray-800: #2C2825;
+  --color-ds-gray-900: #1B1815;
+
+  --color-ds-blue-50: #F2F7FF;
+  --color-ds-blue-100: #E2EEFF;
+  --color-ds-blue-200: #C8DEFF;
+  --color-ds-blue-300: #A2C8FF;
+  --color-ds-blue-400: #76AEFF;
+  --color-ds-blue-500: #4692FF;
+  --color-ds-blue-600: #2074E6;
+  --color-ds-blue-700: #0F5BBF;
+  --color-ds-blue-800: #044698;
+  --color-ds-blue-900: #003374;
+
+  --color-ds-green-50: #EEFBF1;
+  --color-ds-green-100: #DAF5E0;
+  --color-ds-green-200: #BAEBC5;
+  --color-ds-green-300: #8CDBA2;
+  --color-ds-green-400: #5BC67E;
+  --color-ds-green-500: #2BAF60;
+  --color-ds-green-600: #009149;
+  --color-ds-green-700: #007439;
+  --color-ds-green-800: #005A2B;
+  --color-ds-green-900: #00431E;
+
+  --color-ds-yellow-50: #FFFAED;
+  --color-ds-yellow-100: #FFF3D5;
+  --color-ds-yellow-200: #FDE6AD;
+  --color-ds-yellow-300: #FAD579;
+  --color-ds-yellow-400: #F4C43D;
+  --color-ds-yellow-500: #E6B300;
+  --color-ds-yellow-600: #BC9200;
+  --color-ds-yellow-700: #906F00;
+  --color-ds-yellow-800: #6E5400;
+  --color-ds-yellow-900: #543F00;
+
+  --color-ds-red-50: #FFF4F3;
+  --color-ds-red-100: #FFE6E4;
+  --color-ds-red-200: #FFCFCA;
+  --color-ds-red-300: #FFADA6;
+  --color-ds-red-400: #FF817A;
+  --color-ds-red-500: #FA4D4D;
+  --color-ds-red-600: #D92931;
+  --color-ds-red-700: #B31321;
+  --color-ds-red-800: #8E0415;
+  --color-ds-red-900: #6C000C;
+
+  --color-ds-black: #0C0B0A;
+  --color-ds-white: #FFFFFF;
+}
+
+@layer base {
+    html {
+        @apply bg-ds-gray-50 font-sans text-ds-gray-900 antialiased;
+    }
+
+    [x-cloak] {
+        display: none !important;
+    }
 }
