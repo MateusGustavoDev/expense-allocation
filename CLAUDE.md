@@ -331,54 +331,46 @@ final class StoreExpenseRequest extends FormRequest
 
 ## Interface (Blade + Livewire)
 
+### Tokens de design
+
+- Paleta `ds-{cor}-{tom}` no `@theme` de `resources/css/app.css`: `primary` (laranja Grid, #FE8400 = 500), `gray`, `blue`, `green`, `yellow`, `red` (50–900), mais `ds-black` e `ds-white`.
+- Papéis: success = green, warning = yellow, danger = red, info = blue, interface = gray, ação principal e item ativo = primary.
+- Nunca cores arbitrárias (`bg-[#...]`) nem a paleta padrão do Tailwind (`bg-blue-600`) nas views.
+- Texto sobre `primary-500` é `ds-black`: branco tem contraste 2.47:1 e reprova no WCAG AA. Links em laranja usam `primary-700`.
+- Foco: `focus-visible:ring-2 ring-ds-primary-600` (o 500 não atinge 3:1 contra o branco). Campos: borda `primary-600` + anel `primary-500/25`.
+- Fontes: Inter (`font-sans`) e JetBrains Mono (`font-mono`, identificadores). Raio: `rounded-lg` em controles, `rounded-xl` em cards e tabela, `rounded-2xl` em modal.
+- O Tailwind só gera classes escritas por extenso: nunca monte nome de classe por concatenação (`"bg-ds-{$cor}-100"`). Use mapas com as classes completas; exceção declarada em `@source inline()`.
+
 ### Componentes base
 
-Todos os elementos visuais reutilizáveis ficam em `resources/views/components/ui/` como Blade components anônimos. **Nunca** estilize um botão, input ou spinner manualmente fora deles.
+Blade components anônimos em `resources/views/components/ui/`. Catálogo com todas as variantes em **`/ui`** (só em ambiente local; `?open=nome` abre um modal). **Nunca** estilize botão, campo, badge ou tabela manualmente fora deles.
 
-| Componente     | Props                                                                                             |
-| -------------- | ------------------------------------------------------------------------------------------------- |
-| `x-ui.button`  | `variant` (`primary`, `outline`, `ghost`, `danger`), `size` (`sm`, `md`, `lg`), `full`, `loading` |
-| `x-ui.input`   | `label`, `name`, `error` (lê de `$errors` automaticamente)                                        |
-| `x-ui.select`  | `label`, `name`, `options`, `placeholder`                                                         |
-| `x-ui.spinner` | `size`                                                                                            |
-| `x-ui.card`    | slot + `title`                                                                                    |
-| `x-ui.table`   | slots `head` e `body`                                                                             |
-| `x-ui.modal`   | `name`, controlado por Alpine.js                                                                  |
+| Componente | Props principais |
+| --- | --- |
+| `x-ui.button` | `variant` (`primary`, `secondary`, `outline`, `ghost`, `danger`, `danger-outline`, `link`), `size` (`sm`, `md`, `lg`), `icon`, `icon-direction`, `icon-only` (exige `aria-label`), `full`, `loading`, `href` |
+| `x-ui.input` | `name`, `label`, `hint`, `error`, `required`, `icon`, `icon-direction`, `password`, `mono`, `size`, `variant` (`default`, `soft`), `full` |
+| `x-ui.select` | `name`, `label`, `hint`, `error`, `required`, `options` (`[valor => rótulo]`), `placeholder`, `value`, `size`, `full` |
+| `x-ui.textarea` / `x-ui.checkbox` / `x-ui.segmented` | campo de texto longo / caixa de seleção / escolha única lado a lado (radios) |
+| `x-ui.field` | moldura (rótulo, `*`, ajuda, erro) para controles customizados |
+| `x-ui.badge` / `x-ui.status-badge` | `variant` (`neutral`, `primary`, `success`, `warning`, `danger`, `info`, `outline`, `mono`), `size`, `icon`, `dot` / `status` (`ConversionStatus`) |
+| `x-ui.alert` | `variant` (`info`, `success`, `warning`, `danger`), `title`, `icon`, slot `actions` |
+| `x-ui.card` / `x-ui.stat` / `x-ui.empty` | superfície com título e slots `actions`/`footer` / indicador numérico / estado vazio |
+| `x-ui.page-header` | `title`, `description`, `breadcrumbs` (`[rótulo => url]`), slot `actions` |
+| `x-ui.table` + `.toolbar`, `.head`, `.row`, `.cell`, `.empty`, `.loading` | slots `toolbar`, `head`, `footer`; `head` com `sortable`/`sorted-by`/`direction` chama `sortBy()` |
+| `x-ui.pagination` | `paginator` (retorno de `->paginate()`), `livewire` (usa `gotoPage()`), `label` |
+| `x-ui.modal` / `x-ui.confirm` | abertos por evento `open-modal` com o `name`; confirm com `action` (método Livewire) e `danger` |
+| `x-ui.dropdown` + `.item`, `.separator` | slot `trigger`; item com `icon`, `danger`, `href` |
+| `x-ui.toaster` | já no layout; dispare com `$this->dispatch('toast', type: 'success', message: '...')` |
 
-```blade
-{{-- resources/views/components/ui/button.blade.php --}}
-@props(['variant' => 'primary', 'size' => 'md', 'full' => false, 'loading' => false])
+Convenções:
 
-@php
-    $variants = [
-        'primary' => 'bg-blue-600 text-white hover:bg-blue-700',
-        'outline' => 'border border-blue-600 text-blue-600 hover:bg-blue-50',
-        'ghost' => 'text-gray-700 hover:bg-gray-100',
-        'danger' => 'bg-red-600 text-white hover:bg-red-700',
-    ];
-    $sizes = [
-        'sm' => 'h-8 px-3 text-xs',
-        'md' => 'h-10 px-4 text-sm',
-        'lg' => 'h-12 px-6 text-base',
-    ];
-@endphp
-
-<button
-    {{ $attributes->merge(['type' => 'button'])->class([
-        'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors disabled:pointer-events-none disabled:opacity-50',
-        $variants[$variant],
-        $sizes[$size],
-        'w-full' => $full,
-    ]) }}
->
-    @if ($loading)
-        <x-ui.spinner size="sm" />
-    @endif
-    {{ $slot }}
-</button>
-```
-
-Cores e espaçamentos vêm de tokens definidos no `@theme` do Tailwind v4 (`resources/css/app.css`). Não use valores arbitrários (`bg-[#123456]`) nas views.
+- Props em kebab-case (`icon-only`). Tudo o que não é prop vai para o elemento nativo (`wire:model`, `wire:click`, `x-on:*`, `aria-*`, `type`).
+- Em campos, `class` vai para o **invólucro** (layout: `w-72`, `col-span-2`); aparência vem das props.
+- `name` dos campos vem do atributo ou do `wire:model`; o erro é lido de `$errors` por esse nome, com `aria-invalid` e `aria-describedby`.
+- Botão com `wire:click` ou `wire:target` mostra loading e fica desabilitado sozinho enquanto o Livewire processa a ação.
+- Variante ou tamanho inválido lança exceção: erro de digitação aparece no desenvolvimento, não em produção.
+- Ícones Lucide pelo nome (`icon="plus"`), via `x-ui.icon`.
+- Layout da aplicação em `resources/views/layouts/app.blade.php` (`layouts::app`, usado pelos componentes Livewire de página).
 
 ### Componentes Livewire
 
@@ -497,8 +489,9 @@ Workflow único em `.github/workflows/ci.yml`, disparado em `pull_request` para 
 
 ### Interface
 
-- Botão, input ou spinner estilizado manualmente fora de `components/ui/`.
-- Cores hardcoded ou valores arbitrários do Tailwind nas views.
+- Botão, campo, badge ou tabela estilizados manualmente fora de `components/ui/`.
+- Cores hardcoded, valores arbitrários de cor ou a paleta padrão do Tailwind nas views.
+- Nome de classe do Tailwind montado por concatenação.
 - `wire:model.live` sem necessidade real.
 - Lógica de negócio em Alpine.js ou em `@php` nas views.
 - Dado sensível em propriedade pública de componente Livewire.
