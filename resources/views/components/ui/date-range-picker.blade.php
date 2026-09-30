@@ -103,7 +103,7 @@
                 <div class="w-72 p-3">
                     <x-ui.calendar />
 
-                    <div class="mt-3 flex items-center justify-between gap-2 border-t border-ds-gray-200 pt-3">
+                    <div class="-mx-3 mt-3 flex items-center justify-between gap-2 border-t border-ds-gray-200 px-3 pt-3">
                         <x-ui.button variant="ghost" size="sm" x-on:click="clear()">Limpar</x-ui.button>
                         <x-ui.button size="sm" x-on:click="apply()" x-bind:disabled="! canApply()">Aplicar</x-ui.button>
                     </div>
