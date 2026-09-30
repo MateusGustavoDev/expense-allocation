@@ -9,3 +9,5 @@ storage/framework/sessions/*
 storage/framework/views/*
 public/build
 public/hot
+tests
+.phpunit.cache

@@ -18,6 +18,10 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->api(append: [EnsureValidJsonBody::class]);
+
+        // O Railway termina o HTTPS no proxy dele: confiar nos cabeçalhos X-Forwarded-* faz o Laravel gerar URLs
+        // https (assets, Livewire, redirects). Sem isso o navegador bloqueia os assets por mixed content
+        $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
