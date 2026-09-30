@@ -30,6 +30,15 @@ it('formats basis points as a percentage with one decimal place', function (int 
     [5, '0,1%'],
 ]);
 
+it('formats exchange rates with four decimal places', function (string $rate, string $expected) {
+    expect(Format::rate($rate))->toBe($expected);
+})->with([
+    ['5.157000', '5,1570'],
+    ['5.412300', '5,4123'],
+    ['1.000000', '1,0000'],
+    ['5', '5,0000'],
+]);
+
 it('formats dates as dd/mm/yyyy', function () {
     expect(Format::date(CarbonImmutable::parse('2026-09-01')))->toBe('01/09/2026');
 });

@@ -36,6 +36,14 @@ final class Format
         return intdiv($tenths, 10).','.($tenths % 10).'%';
     }
 
+    // Cotação com 4 casas: "5.157000" -> "5,1570" (a PTAX é publicada com 4 casas)
+    public static function rate(string $rate): string
+    {
+        [$integer, $fraction] = explode('.', $rate.'.');
+
+        return $integer.','.str_pad(substr($fraction, 0, 4), 4, '0');
+    }
+
     public static function date(CarbonInterface $date): string
     {
         return $date->format('d/m/Y');
