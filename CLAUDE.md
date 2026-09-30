@@ -464,10 +464,11 @@ staging ─────────PR──────► main ──(auto depl
 - A `main` só aceita PR vindo de `staging` (check `enforce-source-branch` no workflow falha se `github.head_ref != 'staging'`).
 - **Merge sempre com merge commit — nunca squash.** Squash de `staging` → `main` cria um commit que não existe em `staging`, as branches divergem e o PR seguinte arrasta commits antigos ou conflitos. Merge commit também preserva o histórico granular dos commits.
 
-### Branch protection (ruleset do GitHub) em `main` e `staging`
+### Branch protection (rulesets do GitHub `protected-staging` e `protected-main`)
 
 - Exigir pull request antes do merge (aprovações = 0 — o GitHub não permite aprovar o próprio PR).
-- Exigir status checks obrigatórios passando e branch atualizada com a base.
+- Exigir status checks obrigatórios passando.
+- **Branch atualizada com a base só na `staging`**, onde várias branches de feature disputam a mesma base. Na `main` a exigência fica desligada: o merge commit de cada release existe só na `main`, então a `staging` ficaria sempre um commit atrás e todo release exigiria sincronizar. A `main` já só aceita a `staging` inteira (check `source branch`), que passou pelo CI.
 - Bloquear force push e deleção da branch.
 - **Sem bypass para administradores** — do contrário o próprio dono do repositório consegue dar push direto.
 
