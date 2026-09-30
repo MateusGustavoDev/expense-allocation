@@ -333,8 +333,13 @@ final class StoreExpenseRequest extends FormRequest
 
 ### Autenticação
 
-- Rotas da API protegidas por `auth:sanctum`. Token emitido em `POST /api/login`.
-- A interface usa autenticação por sessão padrão do Laravel.
+- **API: token Bearer (Sanctum).** `POST /api/login` troca e-mail e senha por um token (expira em 7 dias, `SANCTUM_TOKEN_EXPIRATION`; vencidos apagados diariamente). `POST /api/logout` revoga só o token usado; `GET /api/me` devolve o usuário. Todas as outras rotas da API ficam em `auth:sanctum`.
+- **Interface: sessão.** `/login` (Livewire, layout `layouts::guest`), `auth` em todas as páginas e `guest` no login; logout por `POST /logout` na sidebar. Sessão regenerada no login e invalidada no logout.
+- `Actions\Auth\AuthenticateUser` confere a credencial e limita a 5 tentativas por minuto por e-mail + IP — usada pela API e pela tela. Erro genérico no campo e-mail (não revela se o e-mail existe); limite estourado lança `TooManyLoginAttemptsException` (429).
+- Sem cadastro público: usuários são criados com `php artisan users:create` (staging e produção via `railway ssh`). O seeder cria `admin@example.com` / `password` só no ambiente local.
+- Um único perfil: todo usuário autenticado pode tudo.
+- A senha do `LoginForm` é zerada após cada tentativa: propriedade pública do Livewire volta ao navegador a cada resposta.
+- Scramble documenta o esquema Bearer; o login é marcado com `@unauthenticated`.
 
 ---
 
@@ -435,6 +440,7 @@ Padrões:
 - A fila roda em modo `sync` nos testes: quem não testa o job em si usa `Queue::fake()`.
 - Regras que dependem de "hoje" fixam o relógio com `$this->travelTo()`.
 - Componentes Livewire com `Livewire::test()` (`->set()`, `->assertSee()`, `->assertHasErrors()`) e `Livewire::withQueryParams()` para filtros da URL.
+- Autenticação por padrão em `tests/Pest.php`: `Feature/Api` entra com `Sanctum::actingAs()` e `Feature/Livewire` e `Feature/Ui` com `actingAs()`. A autenticação em si é testada em `Feature/Auth`, sem usuário. Um teste percorre a tabela de rotas e falha se alguma rota da API ficar sem `auth:sanctum`.
 - `Queue::fake()` para verificar dispatch; teste o Job chamando `handle()` diretamente para verificar comportamento.
 - Um comportamento por teste, nome descrevendo a regra: `it('keeps the expense when the exchange API is down')`.
 - Banco de testes MySQL (mesmo engine de produção), não SQLite.
@@ -500,6 +506,10 @@ Serviços por environment, todos da mesma imagem:
 - `healthcheckPath: /up` (rota de health nativa do Laravel) — a troca de versão só acontece se a nova instância responder.
 - Migrations devem ser **compatíveis com a versão anterior do código** durante o deploy (adicionar coluna nullable primeiro, remover só num deploy posterior).
 - O HTTPS termina no proxy do Railway: `trustProxies(at: '*')` em `bootstrap/app.php` faz o Laravel gerar URLs `https`.
+- URLs: staging em `https://expense-allocation-staging.up.railway.app`, produção em `https://web-production-f7d39.up.railway.app`.
+- Variáveis compartilhadas do environment não entram sozinhas nos serviços: cada serviço as referencia com `${{shared.NOME}}`. Referência a outro serviço (`${{MySQL.MYSQLHOST}}`) vai direto em cada serviço — encadeada numa variável compartilhada, ela não resolve.
+- O MySQL lê `MYSQL_ROOT_PASSWORD` só no primeiro boot: defina a senha antes de subir o banco. Volume inicializado por uma versão maior (ex.: 9) não abre numa menor (8.4).
+- Usuários de staging e produção: `railway ssh -s web -e <environment> -- php artisan users:create`.
 - Variáveis por environment (compartilhadas entre os serviços): `APP_ENV` (`staging`/`production`), `APP_KEY` distinta por environment, `APP_DEBUG=false`, `APP_URL`, `APP_LOCALE=pt_BR`, `LOG_CHANNEL=stderr`, `DB_*` por referência ao MySQL do environment (`${{MySQL.MYSQLHOST}}`...), `SESSION_DRIVER`, `CACHE_STORE` e `QUEUE_CONNECTION` = `database`.
 
 ---
