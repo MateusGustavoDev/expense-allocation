@@ -363,6 +363,7 @@ Blade components anônimos em `resources/views/components/ui/`. Catálogo com to
 | `x-ui.pagination` | `paginator` (retorno de `->paginate()`), `livewire` (usa `gotoPage()`), `label` |
 | `x-ui.modal` / `x-ui.confirm` | abertos por evento `open-modal` com o `name`; confirm com `action` (método Livewire) e `danger` |
 | `x-ui.dropdown` + `.item`, `.separator` | slot `trigger`; item com `icon`, `danger`, `href` |
+| `x-ui.logo` | `size` (`sm`, `md`, `lg`, `xl`), `rounded` (`none`, `sm`, `md`, `lg`, `full`), `label` (sem ele, decorativo). Ícone em `size-9/16` e raio em `%` do lado (tokens `--radius-mark-*`): a proporção se mantém em qualquer tamanho |
 | `x-ui.toaster` | já no layout; dispare com `$this->dispatch('toast', type: 'success', message: '...')` |
 
 Convenções:

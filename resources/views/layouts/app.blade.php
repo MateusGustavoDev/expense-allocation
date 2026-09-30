@@ -37,9 +37,7 @@
     <div class="flex min-h-screen">
         <aside class="sticky top-0 hidden h-screen w-64 shrink-0 flex-col gap-7 border-r border-ds-gray-200 bg-ds-white px-4 py-5 lg:flex">
             <a href="{{ Route::has('reports.index') ? route('reports.index') : url('/') }}" class="flex items-center gap-2.5 px-2">
-                <span class="flex size-8 items-center justify-center rounded-lg bg-ds-primary-500 text-ds-black">
-                    <x-ui.icon name="split" class="size-4.5" />
-                </span>
+                <x-ui.logo />
                 <span class="flex flex-col leading-tight">
                     <span class="text-base font-bold text-ds-gray-900">Rateio</span>
                     <span class="text-xs text-ds-gray-500">Despesas compartilhadas</span>

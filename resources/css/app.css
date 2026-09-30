@@ -85,6 +85,11 @@
 
   --color-ds-black: #0C0B0A;
   --color-ds-white: #FFFFFF;
+
+  /* Raio proporcional ao lado (x-ui.logo): em porcentagem, o canto acompanha qualquer tamanho */
+  --radius-mark-sm: 12.5%;
+  --radius-mark-md: 25%;
+  --radius-mark-lg: 37.5%;
 }
 
 @layer base {

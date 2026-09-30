@@ -188,3 +188,30 @@ it('renders overlay panels in the body so cards do not clip them', function () {
     // Quebra de linha depois de </x-slot>: o Blade compila para @endslot sem espaço, e texto colado quebra a diretiva
     $this->blade("<x-ui.dropdown>\n<x-slot:trigger><button>Ações</button></x-slot:trigger>\nItem\n</x-ui.dropdown>")->assertSee('x-teleport="body"', false);
 });
+
+it('renders the logo as a decorative mark by default', function () {
+    $this->blade('<x-ui.logo />')
+        ->assertSee('aria-hidden="true"', false)
+        ->assertSee('size-8', false)
+        ->assertSee('rounded-mark-md', false)
+        ->assertSee('size-9/16', false);
+});
+
+it('keeps the logo proportions when the size changes', function () {
+    // Só o lado muda: ícone e raio são frações do lado, iguais em qualquer tamanho
+    $this->blade('<x-ui.logo size="xl" rounded="lg" />')
+        ->assertSee('size-16', false)
+        ->assertSee('rounded-mark-lg', false)
+        ->assertSee('size-9/16', false);
+});
+
+it('exposes the logo as an image when it has a label', function () {
+    $this->blade('<x-ui.logo label="Rateio" rounded="full" />')
+        ->assertSee('role="img"', false)
+        ->assertSee('aria-label="Rateio"', false)
+        ->assertSee('rounded-full', false);
+});
+
+it('rejects an unknown logo size', function () {
+    $this->blade('<x-ui.logo size="huge" />');
+})->throws(ErrorException::class, 'Tamanho de logo desconhecido: huge');
