@@ -76,21 +76,6 @@ Staging e produção não têm cadastro público: usuários são criados com `ph
 
 ---
 
-## Onde está cada requisito
-
-| Requisito | Onde está | Testes |
-| --- | --- | --- |
-| Cadastro de unidades (nome e empresa) | `UnitController`, `UnitsPage`, `UnitRules` | `UnitApiTest`, `UnitsPageTest` |
-| Despesa com rateio que soma exatamente 100% | `CreateExpense`, `ExpenseRules` | `CreateExpenseTest`, `ExpenseApiTest`, `CreateExpensePageTest` |
-| Centavos que fecham com o total | `Services/Money/AllocationSplitter` | `AllocationSplitterTest` |
-| Conversão USD → BRL pela cotação da data, sem perder a despesa | `ConvertExpenseCurrencyJob`, `ConvertExpenseCurrency`, `BcbPtaxProvider` | `ConvertExpenseCurrencyJobTest`, `ConvertExpenseCurrencyTest`, `BcbPtaxProviderTest` |
-| Importação CSV com relatório de erros | `ImportExpensesFromCsv`, `Services/Csv/CsvReader` | `ImportExpensesFromCsvTest`, `CsvReaderTest`, `ExpenseImportApiTest` |
-| Relatório em BRL por unidade e período (API e interface) | `GetUnitTotalsReport`, `ReportController`, `UnitTotalsPage` | `GetUnitTotalsReportTest`, `ReportApiTest`, `UnitTotalsPageTest` |
-| Diferencial: conversão via fila com nova tentativa | `ConvertExpenseCurrencyJob`, `expenses:convert-pending` | `ConvertExpenseCurrencyJobTest`, `ConvertPendingExpensesTest` |
-| Diferencial: autenticação na API | Sanctum, `AuthenticateUser`, `AuthController` | `ApiAuthenticationTest`, `WebAuthenticationTest` |
-
----
-
 ## Decisões
 
 ### Dinheiro e rateio
@@ -165,23 +150,3 @@ Sei que um projeto deste tamanho provavelmente não precisaria de pipeline de CI
 
 13. Todos os usuários podem cadastrar, importar e ver tudo? Ou cada pessoa só enxerga as unidades da própria empresa?
 14. Quem cria e desativa usuários? Precisa de recuperação de senha por e-mail ou login com a conta Google ou Microsoft da empresa?
-
----
-
-## Estrutura
-
-```
-app/
-├── Actions/          # Casos de uso: um por classe, chamados pela API e pela interface
-├── Http/             # Controllers da API (finos), Form Requests e API Resources
-├── Livewire/         # Telas da interface
-├── Jobs/             # Conversão de moeda na fila
-├── Services/         # AllocationSplitter, Decimal, CurrencyConverter, CsvReader, provedor PTAX
-└── Validation/       # Regras compartilhadas entre API, CSV e telas
-resources/views/components/ui/   # Design system
-tests/
-├── Unit/             # Lógica pura: rateio, centavos, conversão, leitura de CSV
-└── Feature/          # API, Actions, Jobs, telas, autenticação
-```
-
-As convenções do projeto (arquitetura, padrões de código, regras de domínio, CI/CD) estão documentadas em [`CLAUDE.md`](CLAUDE.md).
