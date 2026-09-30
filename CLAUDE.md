@@ -336,7 +336,7 @@ final class StoreExpenseRequest extends FormRequest
 - **API: token Bearer (Sanctum).** `POST /api/login` troca e-mail e senha por um token (expira em 7 dias, `SANCTUM_TOKEN_EXPIRATION`; vencidos apagados diariamente). `POST /api/logout` revoga só o token usado; `GET /api/me` devolve o usuário. Todas as outras rotas da API ficam em `auth:sanctum`.
 - **Interface: sessão.** `/login` (Livewire, layout `layouts::guest`), `auth` em todas as páginas e `guest` no login; logout por `POST /logout` na sidebar. Sessão regenerada no login e invalidada no logout.
 - `Actions\Auth\AuthenticateUser` confere a credencial e limita a 5 tentativas por minuto por e-mail + IP — usada pela API e pela tela. Erro genérico no campo e-mail (não revela se o e-mail existe); limite estourado lança `TooManyLoginAttemptsException` (429).
-- Sem cadastro público: usuários são criados com `php artisan users:create` (staging e produção via `railway ssh`). O seeder cria `admin@example.com` / `password` só no ambiente local.
+- Sem cadastro público: usuários são criados com `php artisan users:create` (staging e produção via `railway ssh`). O seeder cria `admin@example.com` / `password` só no ambiente local. Dados de demonstração (grupo com 3 empresas, 5 unidades e seis meses de despesas) com `php artisan db:seed --class=DemoSeeder`: passa pela `CreateExpense`, usa datas relativas ao dia em que roda e não duplica se já existirem.
 - Um único perfil: todo usuário autenticado pode tudo.
 - A senha do `LoginForm` é zerada após cada tentativa: propriedade pública do Livewire volta ao navegador a cada resposta.
 - Scramble documenta o esquema Bearer; o login é marcado com `@unauthenticated`.
