@@ -18,11 +18,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property Currency $currency
  * @property ConversionStatus $conversion_status
  * @property string|null $exchange_rate
+ * @property CarbonImmutable|null $exchange_rate_date
  * @property CarbonImmutable|null $converted_at
  */
 #[Fillable([
-    'description', 'supplier', 'date', 'amount_cents', 'currency',
-    'exchange_rate', 'amount_brl_cents', 'conversion_status', 'converted_at',
+    'description', 'supplier', 'date', 'amount_cents', 'currency', 'exchange_rate',
+    'exchange_rate_date', 'amount_brl_cents', 'conversion_status', 'converted_at',
 ])]
 final class Expense extends Model
 {
@@ -46,6 +47,7 @@ final class Expense extends Model
             'currency' => Currency::class,
             // Cotação como string decimal: mantém as 6 casas exatas, sem passar por float
             'exchange_rate' => 'decimal:6',
+            'exchange_rate_date' => 'immutable_date',
             'amount_brl_cents' => 'integer',
             'conversion_status' => ConversionStatus::class,
             'converted_at' => 'immutable_datetime',

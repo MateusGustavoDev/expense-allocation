@@ -10,8 +10,11 @@ use App\Exceptions\InvalidAllocationException;
 use App\Models\Expense;
 use App\Models\Unit;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Queue;
 
 // A Action também é chamada pela importação por CSV, sem Form Request: as regras precisam valer nela
+
+beforeEach(fn () => Queue::fake());
 
 function expenseData(array $allocations): ExpenseData
 {
