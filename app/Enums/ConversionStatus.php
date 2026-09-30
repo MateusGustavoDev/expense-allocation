@@ -15,4 +15,13 @@ enum ConversionStatus: string
 
     // Tentativas esgotadas; precisa de reprocessamento manual
     case Failed = 'failed';
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::Pending => 'Pendente',
+            self::Converted => 'Convertida',
+            self::Failed => 'Falhou',
+        };
+    }
 }
