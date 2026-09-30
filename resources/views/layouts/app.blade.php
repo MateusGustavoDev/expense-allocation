@@ -15,22 +15,17 @@
             ['label' => 'Unidades', 'icon' => 'building-2', 'route' => 'units.index'],
             ['label' => 'Empresas', 'icon' => 'briefcase', 'route' => 'companies.index'],
         ],
+        // Itens com url (em vez de route) ficam fora da interface e abrem em nova aba
+        'Integrações' => [
+            ['label' => 'Documentação da API', 'icon' => 'code-xml', 'url' => '/docs/api'],
+        ],
     ];
 @endphp
 
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $title ? "{$title} · " : '' }}{{ config('app.name') }}</title>
-    {{-- SVG para navegadores modernos; ICO como fallback; PNG sem cantos para a tela inicial do iOS (que aplica a própria máscara) --}}
-    <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="48x48">
-    <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
-    @fonts
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-    @livewireStyles
+    @include('layouts.partials.head', ['title' => $title])
 </head>
 {{-- x-data no body: a página inteira é um escopo Alpine, então qualquer elemento pode usar x-on e $dispatch --}}
 <body class="min-h-screen" x-data>
@@ -53,19 +48,36 @@
                     <div class="flex flex-col gap-0.5">
                         <p class="px-3 pb-2 text-[11px] font-semibold tracking-wider text-ds-gray-500 uppercase">{{ $group }}</p>
                         @foreach ($items as $item)
-                            <x-ui.nav-item
-                                :href="Route::has($item['route']) ? route($item['route']) : '#'"
-                                :icon="$item['icon']"
-                                :active="request()->routeIs(...($item['active'] ?? [$item['route']]))"
-                            >{{ $item['label'] }}</x-ui.nav-item>
+                            @if (isset($item['url']))
+                                <x-ui.nav-item :href="url($item['url'])" :icon="$item['icon']" external>{{ $item['label'] }}</x-ui.nav-item>
+                            @else
+                                <x-ui.nav-item
+                                    :href="Route::has($item['route']) ? route($item['route']) : '#'"
+                                    :icon="$item['icon']"
+                                    :active="request()->routeIs(...($item['active'] ?? [$item['route']]))"
+                                >{{ $item['label'] }}</x-ui.nav-item>
+                            @endif
                         @endforeach
                     </div>
                 @endforeach
             </nav>
 
-            <div class="mt-auto border-t border-ds-gray-200 pt-4">
-                <x-ui.nav-item href="{{ url('/docs/api') }}" icon="book-open">Documentação da API</x-ui.nav-item>
-            </div>
+            @auth
+                {{-- -mx-4 + px-4: a linha ocupa a largura toda da sidebar (que tem px-4) sem mexer no conteúdo --}}
+                <div class="-mx-4 mt-auto border-t border-ds-gray-200 px-4 pt-4">
+                    <div class="flex items-center gap-2.5 px-2">
+                        <x-ui.avatar :name="auth()->user()->name" />
+                        <div class="flex min-w-0 flex-1 flex-col leading-tight">
+                            <span class="truncate text-sm font-medium text-ds-gray-900" title="{{ auth()->user()->name }}">{{ auth()->user()->name }}</span>
+                            <span class="truncate text-xs text-ds-gray-500" title="{{ auth()->user()->email }}">{{ auth()->user()->email }}</span>
+                        </div>
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <x-ui.button type="submit" variant="ghost" size="sm" icon="log-out" icon-only aria-label="Sair" title="Sair" />
+                        </form>
+                    </div>
+                </div>
+            @endauth
         </aside>
 
         <main id="conteudo" class="min-w-0 flex-1">
