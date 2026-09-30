@@ -21,16 +21,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $title ? "{$title} · " : '' }}{{ config('app.name') }}</title>
-    {{-- SVG para navegadores modernos; ICO como fallback; PNG sem cantos para a tela inicial do iOS (que aplica a própria máscara) --}}
-    <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="48x48">
-    <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
-    @fonts
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-    @livewireStyles
+    @include('layouts.partials.head', ['title' => $title])
 </head>
 {{-- x-data no body: a página inteira é um escopo Alpine, então qualquer elemento pode usar x-on e $dispatch --}}
 <body class="min-h-screen" x-data>
@@ -63,8 +54,21 @@
                 @endforeach
             </nav>
 
-            <div class="mt-auto border-t border-ds-gray-200 pt-4">
+            <div class="mt-auto flex flex-col gap-3 border-t border-ds-gray-200 pt-4">
                 <x-ui.nav-item href="{{ url('/docs/api') }}" icon="book-open">Documentação da API</x-ui.nav-item>
+
+                @auth
+                    <div class="flex items-center gap-2 px-2">
+                        <div class="flex min-w-0 flex-1 flex-col leading-tight">
+                            <span class="truncate text-sm font-medium text-ds-gray-900">{{ auth()->user()->name }}</span>
+                            <span class="truncate text-xs text-ds-gray-500">{{ auth()->user()->email }}</span>
+                        </div>
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <x-ui.button type="submit" variant="ghost" size="sm" icon="log-out" icon-only aria-label="Sair" title="Sair" />
+                        </form>
+                    </div>
+                @endauth
             </div>
         </aside>
 

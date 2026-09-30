@@ -18,6 +18,11 @@ pest()->extend(TestCase::class)
 pest()->beforeEach(fn () => Sanctum::actingAs(User::factory()->create()))
     ->in('Feature/Api');
 
+// Páginas da interface exigem sessão: os testes das telas entram logados
+pest()->beforeEach(function (): void {
+    $this->actingAs(User::factory()->create());
+})->in('Feature/Livewire', 'Feature/Ui');
+
 // Simula a API PTAX do Banco Central respondendo com uma cotação de venda do dia informado
 function fakePtax(float $rate, string $quotedOn): void
 {
