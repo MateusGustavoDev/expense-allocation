@@ -16,11 +16,15 @@
             <x-ui.table.row wire:key="company-{{ $company->id }}">
                 <x-ui.table.cell class="font-medium">{{ $company->name }}</x-ui.table.cell>
                 <x-ui.table.cell numeric>{{ $company->units_count }}</x-ui.table.cell>
-                <x-ui.table.cell align="center" class="w-24">
-                    <div class="flex justify-center gap-1">
-                        <x-ui.button variant="ghost" size="sm" icon="pencil" icon-only aria-label="Editar {{ $company->name }}" wire:click="edit({{ $company->id }})" />
-                        <x-ui.button variant="ghost" size="sm" icon="trash-2" icon-only aria-label="Excluir {{ $company->name }}" wire:click="confirmDelete({{ $company->id }})" />
-                    </div>
+                <x-ui.table.cell align="center">
+                    <x-ui.dropdown>
+                        <x-slot:trigger>
+                            <x-ui.button variant="ghost" size="sm" icon="ellipsis" icon-only aria-label="Ações de {{ $company->name }}" />
+                        </x-slot:trigger>
+                        <x-ui.dropdown.item icon="pencil" wire:click="edit({{ $company->id }})">Editar</x-ui.dropdown.item>
+                        <x-ui.dropdown.separator />
+                        <x-ui.dropdown.item icon="trash-2" danger wire:click="confirmDelete({{ $company->id }})">Excluir</x-ui.dropdown.item>
+                    </x-ui.dropdown>
                 </x-ui.table.cell>
             </x-ui.table.row>
         @empty

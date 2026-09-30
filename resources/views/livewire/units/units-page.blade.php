@@ -29,11 +29,15 @@
                 <x-ui.table.cell align="center"><x-ui.badge variant="mono">{{ $unit->slug }}</x-ui.badge></x-ui.table.cell>
                 <x-ui.table.cell muted>{{ $unit->company->name }}</x-ui.table.cell>
                 <x-ui.table.cell numeric>{{ $unit->allocations_count }}</x-ui.table.cell>
-                <x-ui.table.cell align="center" class="w-24">
-                    <div class="flex justify-center gap-1">
-                        <x-ui.button variant="ghost" size="sm" icon="pencil" icon-only aria-label="Editar {{ $unit->name }}" wire:click="edit({{ $unit->id }})" />
-                        <x-ui.button variant="ghost" size="sm" icon="trash-2" icon-only aria-label="Excluir {{ $unit->name }}" wire:click="confirmDelete({{ $unit->id }})" />
-                    </div>
+                <x-ui.table.cell align="center">
+                    <x-ui.dropdown>
+                        <x-slot:trigger>
+                            <x-ui.button variant="ghost" size="sm" icon="ellipsis" icon-only aria-label="Ações de {{ $unit->name }}" />
+                        </x-slot:trigger>
+                        <x-ui.dropdown.item icon="pencil" wire:click="edit({{ $unit->id }})">Editar</x-ui.dropdown.item>
+                        <x-ui.dropdown.separator />
+                        <x-ui.dropdown.item icon="trash-2" danger wire:click="confirmDelete({{ $unit->id }})">Excluir</x-ui.dropdown.item>
+                    </x-ui.dropdown>
                 </x-ui.table.cell>
             </x-ui.table.row>
         @empty
