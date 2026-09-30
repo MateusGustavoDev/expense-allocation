@@ -351,6 +351,8 @@ Blade components anônimos em `resources/views/components/ui/`. Catálogo com to
 | `x-ui.input` | `name`, `label`, `hint`, `error`, `required`, `icon`, `icon-direction`, `password`, `mono`, `size`, `variant` (`default`, `soft`), `full` |
 | `x-ui.select` | `name`, `label`, `hint`, `error`, `required`, `options` (`[valor => rótulo]`), `placeholder`, `value`, `size`, `full` |
 | `x-ui.textarea` / `x-ui.checkbox` / `x-ui.segmented` | campo de texto longo / caixa de seleção / escolha única lado a lado (radios) |
+| `x-ui.date-picker` | `name`, `label`, `hint`, `error`, `required`, `placeholder`, `value` (`AAAA-MM-DD`), `min`, `max`, `size`, `full` |
+| `x-ui.date-range-picker` | idem, com valor `['from' => ..., 'to' => ...]` e atalhos (Hoje, Últimos 7/30 dias, Este mês, Mês passado, Este ano) |
 | `x-ui.field` | moldura (rótulo, `*`, ajuda, erro) para controles customizados |
 | `x-ui.badge` / `x-ui.status-badge` | `variant` (`neutral`, `primary`, `success`, `warning`, `danger`, `info`, `outline`, `mono`), `size`, `icon`, `dot` / `status` (`ConversionStatus`) |
 | `x-ui.alert` | `variant` (`info`, `success`, `warning`, `danger`), `title`, `icon`, slot `actions` |
@@ -371,6 +373,15 @@ Convenções:
 - Variante ou tamanho inválido lança exceção: erro de digitação aparece no desenvolvimento, não em produção.
 - Ícones Lucide pelo nome (`icon="plus"`), via `x-ui.icon`.
 - Layout da aplicação em `resources/views/layouts/app.blade.php` (`layouts::app`, usado pelos componentes Livewire de página).
+
+Alpine e interatividade:
+
+- O `<body>` tem `x-data`: diretivas Alpine (`x-on`, `$dispatch`) só funcionam dentro de um escopo `x-data`.
+- Livewire e Alpine são carregados pelo `resources/js/app.js` (ESM do Livewire + `@livewireScriptConfig` no layout), onde os componentes Alpine da aplicação são registrados com `Alpine.data()` antes do `Livewire.start()`.
+- Controles com estado próprio expõem o valor com `x-modelable`, para aceitar `wire:model` como um input nativo.
+- Painéis sobrepostos (calendários, menus) usam `x-teleport="body"` + `x-anchor`: dentro de um card com `overflow-hidden` eles seriam recortados. Clique no gatilho não conta como "clique fora".
+- Datas no JavaScript: nunca `toISOString()` para gerar `AAAA-MM-DD` (converte para UTC e muda o dia no Brasil); monte com as partes locais.
+- Depois de `</x-slot>` sempre quebre a linha: o Blade compila para `@endslot` sem espaço, e texto colado (`</x-slot>Texto`) quebra a diretiva e deixa um buffer de saída aberto.
 
 ### Componentes Livewire
 
