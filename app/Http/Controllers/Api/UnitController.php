@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
-use App\Exceptions\ResourceInUseException;
+use App\Actions\Units\DeleteUnit;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UnitRequest;
 use App\Http\Resources\UnitResource;
@@ -67,13 +67,9 @@ final class UnitController extends Controller
      *
      * Unidades com despesas rateadas não podem ser removidas.
      */
-    public function destroy(Unit $unit): Response
+    public function destroy(Unit $unit, DeleteUnit $deleteUnit): Response
     {
-        if ($unit->allocations()->exists()) {
-            throw new ResourceInUseException('Não é possível excluir uma unidade com despesas rateadas.');
-        }
-
-        $unit->delete();
+        $deleteUnit->execute($unit);
 
         return response()->noContent();
     }
