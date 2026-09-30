@@ -11,6 +11,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property-read Company $company company_id é obrigatório: a unidade sempre tem empresa
+ */
 #[Fillable(['company_id', 'name', 'slug'])]
 final class Unit extends Model
 {
