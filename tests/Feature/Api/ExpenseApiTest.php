@@ -3,11 +3,16 @@
 declare(strict_types=1);
 
 use App\Enums\ConversionStatus;
+use App\Jobs\ConvertExpenseCurrencyJob;
 use App\Models\Expense;
 use App\Models\ExpenseAllocation;
 use App\Models\Unit;
+use Illuminate\Support\Facades\Queue;
 
 beforeEach(function () {
+    // A conversão é testada em ConvertExpenseCurrencyTest; aqui só importa que o job seja enfileirado
+    Queue::fake();
+
     [$this->unitA, $this->unitB, $this->unitC] = Unit::factory()->count(3)->create();
 });
 
@@ -42,10 +47,12 @@ it('creates a BRL expense already converted, with cents closing the total', func
         ->assertJsonPath('data.allocations.0.amount', '33.34')
         ->assertJsonPath('data.allocations.1.amount', '33.33')
         ->assertJsonPath('data.allocations.2.amount', '33.33')
-        ->assertJsonPath('data.allocations.0.amount_brl', '33.34');
+        ->assertJsonPath('data.allocations.0.amount_brl', '33.34')
+        ->assertJsonPath('data.exchange_rate_date', '2026-09-01');
 
     // SUM() do MySQL chega como string pelo PDO
     expect((int) ExpenseAllocation::sum('amount_cents'))->toBe(10000);
+    Queue::assertNotPushed(ConvertExpenseCurrencyJob::class);
 });
 
 it('gives the leftover cent to the largest remainder', function () {
@@ -77,7 +84,29 @@ it('creates a USD expense as pending conversion', function () {
         ->assertJsonPath('data.allocations.0.amount', '750.00')
         ->assertJsonPath('data.allocations.0.amount_brl', null);
 
-    expect(Expense::sole()->conversion_status)->toBe(ConversionStatus::Pending);
+    $expense = Expense::sole();
+    expect($expense->conversion_status)->toBe(ConversionStatus::Pending);
+    Queue::assertPushed(ConvertExpenseCurrencyJob::class, fn (ConvertExpenseCurrencyJob $job): bool => $job->expense->is($expense));
+});
+
+it('requeues the conversion of a failed expense', function () {
+    $expense = Expense::factory()->pendingUsd()->create(['conversion_status' => ConversionStatus::Failed]);
+
+    $this->postJson("/api/expenses/{$expense->id}/retry-conversion")
+        ->assertAccepted()
+        ->assertJsonPath('data.conversion_status', 'pending');
+
+    Queue::assertPushed(ConvertExpenseCurrencyJob::class);
+});
+
+it('refuses to requeue an expense that is already converted', function () {
+    $expense = Expense::factory()->create();
+
+    $this->postJson("/api/expenses/{$expense->id}/retry-conversion")
+        ->assertConflict()
+        ->assertJsonPath('message', 'A despesa já foi convertida.');
+
+    Queue::assertNothingPushed();
 });
 
 it('rejects allocations that do not sum to 100%', function () {

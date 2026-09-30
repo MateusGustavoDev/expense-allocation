@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Actions\Expenses\CreateExpense;
+use App\Actions\Expenses\RequeueExpenseConversion;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ListExpensesRequest;
 use App\Http\Requests\StoreExpenseRequest;
@@ -12,6 +13,7 @@ use App\Http\Resources\ExpenseResource;
 use App\Models\Expense;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 #[Group('Despesas', weight: 3)]
@@ -57,5 +59,16 @@ final class ExpenseController extends Controller
     public function show(Expense $expense): ExpenseResource
     {
         return ExpenseResource::make($expense->load('allocations.unit'));
+    }
+
+    /**
+     * Reprocessar conversão
+     *
+     * Coloca de novo na fila a conversão para BRL de uma despesa pendente ou que falhou.
+     */
+    public function retryConversion(Expense $expense, RequeueExpenseConversion $requeue): JsonResponse
+    {
+        /** @status 202 */
+        return ExpenseResource::make($requeue->execute($expense))->response()->setStatusCode(202);
     }
 }

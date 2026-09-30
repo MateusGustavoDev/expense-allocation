@@ -41,7 +41,9 @@ docker compose exec app composer analyse        # Larastan
 
 Larastan roda no **nível 8** (`phpstan.neon`): tipos declarados em tudo e `null` tratado de forma estrita. Não use baseline nem `@phpstan-ignore` para silenciar erro — corrija o tipo.
 
-Serviços do `compose.yaml`: `app` (PHP), `mysql`, `queue` (worker `php artisan queue:work`) e `vite` (assets em dev). O projeto deve subir apenas com `docker compose up` seguindo o README.
+Serviços do `compose.yaml`: `app` (PHP), `mysql`, `queue` (worker `php artisan queue:work`), `scheduler` (`php artisan schedule:work`) e `vite` (assets em dev). `app`, `queue` e `scheduler` usam a imagem do `Dockerfile` (serversideup/php + bcmath). O projeto deve subir apenas com `docker compose up` seguindo o README.
+
+O worker mantém o código em memória: depois de alterar Jobs ou Actions, rode `docker compose restart queue`.
 
 ---
 
@@ -176,11 +178,15 @@ Todo payload e toda resposta usam **`snake_case`** — padrão nativo do Laravel
 ### Conversão de Moeda
 
 - Despesas em **BRL**: `exchange_rate = 1`, `amount_brl_cents = amount_cents`, `conversion_status = converted` na criação.
-- Despesas em **USD**: a despesa é **salva primeiro** com `conversion_status = pending` e a conversão é despachada para a fila (`ConvertExpenseCurrencyJob`). A indisponibilidade da API de câmbio **nunca** impede o cadastro.
-- O Job usa `$tries` e `backoff()` exponencial. Ao esgotar as tentativas, `failed()` marca `conversion_status = failed`. Um comando Artisan (`expenses:retry-conversions`) re-enfileira as falhas.
-- A cotação usada é a da **data da despesa**. Cotações obtidas são persistidas em `exchange_rates` (moeda + data, único) e reutilizadas — a API externa é consultada no máximo uma vez por data.
-- Provedor: **API PTAX do Banco Central**, atrás da interface `Contracts\ExchangeRateProvider`, registrada no container. Trocar de provedor não pode exigir mudança fora de `Services/ExchangeRates` e do binding.
-- Datas sem cotação (fim de semana/feriado): usar o último dia útil anterior. Decisão documentada no README como pergunta ao negócio.
+- Despesas em **USD**: a despesa é **salva primeiro** com `conversion_status = pending` e, depois do commit, `ConvertExpenseCurrencyJob` é enfileirado. A indisponibilidade da API de câmbio **nunca** impede o cadastro.
+- O job usa os atributos `#[Tries(5)]` e `#[Backoff(60, 300, 900, 3600)]`, é único por despesa (`ShouldBeUnique`) e, ao esgotar as tentativas, `failed()` marca `conversion_status = failed`. Provedor sem cotação para a data (`ExchangeRateUnavailableException`) falha na hora, sem novas tentativas.
+- `ConvertExpenseCurrency` é idempotente e trava a linha (`lockForUpdate`): executar duas vezes não converte duas vezes. O valor em BRL é rateado de novo com o `AllocationSplitter`.
+- Rede de segurança: `expenses:convert-pending` (agendado a cada 10 min em `routes/console.php`) reenfileira pendentes cuja cotação já existe; com `--failed`, reprocessa também as que falharam. Reprocessamento manual: `POST /api/expenses/{id}/retry-conversion`.
+- A cotação usada é a da **data da despesa**, só depois que o dia termina no horário de Brasília (`services.ptax.timezone`). Despesa de hoje fica pendente e é convertida pela varredura no dia seguinte.
+- Cotações obtidas são persistidas em `exchange_rates` (moeda + data pedida, único) e reutilizadas — a API externa é consultada no máximo uma vez por data.
+- Provedor: **API PTAX do Banco Central** (cotação de **venda**), atrás da interface `Contracts\ExchangeRateProvider`, registrada no `AppServiceProvider`. Trocar de provedor não exige mudança fora de `Services/ExchangeRates` e do binding.
+- Datas sem cotação (fim de semana/feriado): o provedor consulta os 7 dias até a data e usa a cotação mais recente. A data efetivamente usada fica em `expenses.exchange_rate_date`.
+- Conversão com **bcmath** (`CurrencyConverter`), arredondamento comercial: centavos x cotação estouraria `int64` e float perde precisão.
 - Chamadas HTTP sempre com `timeout()` explícito. Falha de rede lança exceção — o retry é responsabilidade da fila, não do cliente HTTP.
 
 ### Importação CSV
@@ -393,7 +399,9 @@ Prioridade de cobertura:
 Padrões:
 
 - Pest com `RefreshDatabase`; dados via **factories**, nunca inserts manuais.
-- HTTP externo **sempre** falseado com `Http::fake()` e `Http::preventStrayRequests()` — nenhum teste bate em API real.
+- HTTP externo **sempre** falseado com `Http::fake()` — `Http::preventStrayRequests()` está ativo no `TestCase` e faz qualquer requisição não simulada falhar. Helpers `fakePtax()` e `fakePtaxDown()` em `tests/Pest.php`.
+- A fila roda em modo `sync` nos testes: quem não testa o job em si usa `Queue::fake()`.
+- Regras que dependem de "hoje" fixam o relógio com `$this->travelTo()`.
 - `Queue::fake()` para verificar dispatch; teste o Job chamando `handle()` diretamente para verificar comportamento.
 - Um comportamento por teste, nome descrevendo a regra: `it('keeps the expense when the exchange API is down')`.
 - Banco de testes MySQL (mesmo engine de produção), não SQLite.

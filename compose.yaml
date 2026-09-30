@@ -2,7 +2,10 @@
 # O código é montado via volume, então alterações refletem sem rebuild.
 
 x-php: &php
-  image: serversideup/php:8.4-fpm-nginx
+  build:
+    context: .
+    target: base
+  image: expense-allocation-php
   volumes:
     - .:/var/www/html
   depends_on:
@@ -24,6 +27,16 @@ services:
     stop_signal: SIGTERM
     healthcheck:
       test: ["CMD", "healthcheck-queue"]
+      start_period: 10s
+
+  # Executa as tarefas agendadas (routes/console.php), como a varredura de conversões pendentes
+  scheduler:
+    <<: *php
+    command: ["php", "/var/www/html/artisan", "schedule:work"]
+    restart: unless-stopped
+    stop_signal: SIGTERM
+    healthcheck:
+      test: ["CMD", "healthcheck-schedule"]
       start_period: 10s
 
   vite:

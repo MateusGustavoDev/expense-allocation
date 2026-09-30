@@ -27,6 +27,8 @@ final class ExpenseResource extends JsonResource
             'amount' => Decimal::fromHundredths($this->amount_cents),
             'currency' => $this->currency,
             'exchange_rate' => $this->exchange_rate,
+            // Dia da cotação usada: em fins de semana e feriados, o último dia útil anterior à data da despesa
+            'exchange_rate_date' => $this->exchange_rate_date?->format('Y-m-d'),
             'amount_brl' => $this->amount_brl_cents === null ? null : Decimal::fromHundredths($this->amount_brl_cents),
             'conversion_status' => $this->conversion_status,
             'converted_at' => $this->converted_at,

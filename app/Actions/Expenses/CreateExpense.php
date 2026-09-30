@@ -9,6 +9,7 @@ use App\Data\ExpenseData;
 use App\Enums\ConversionStatus;
 use App\Enums\Currency;
 use App\Exceptions\InvalidAllocationException;
+use App\Jobs\ConvertExpenseCurrencyJob;
 use App\Models\Expense;
 use App\Services\Money\AllocationSplitter;
 use Illuminate\Support\Facades\DB;
@@ -31,7 +32,7 @@ final class CreateExpense
         $isBrl = $data->currency === Currency::BRL;
         $shares = $this->splitter->split($data->amountCents, $basisPoints);
 
-        return DB::transaction(function () use ($data, $isBrl, $basisPoints, $shares): Expense {
+        $expense = DB::transaction(function () use ($data, $isBrl, $basisPoints, $shares): Expense {
             $expense = Expense::create([
                 'description' => $data->description,
                 'supplier' => $data->supplier,
@@ -39,6 +40,7 @@ final class CreateExpense
                 'amount_cents' => $data->amountCents,
                 'currency' => $data->currency,
                 'exchange_rate' => $isBrl ? '1.000000' : null,
+                'exchange_rate_date' => $isBrl ? $data->date : null,
                 'amount_brl_cents' => $isBrl ? $data->amountCents : null,
                 'conversion_status' => $isBrl ? ConversionStatus::Converted : ConversionStatus::Pending,
                 'converted_at' => $isBrl ? now() : null,
@@ -55,6 +57,13 @@ final class CreateExpense
 
             return $expense->load('allocations.unit');
         });
+
+        // Fora da transação: o worker só pode buscar a despesa depois que ela foi gravada
+        if (! $isBrl) {
+            ConvertExpenseCurrencyJob::dispatch($expense);
+        }
+
+        return $expense;
     }
 
     /**

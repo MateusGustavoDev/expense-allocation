@@ -37,4 +37,12 @@ return [
         ],
     ],
 
+    // Cotação PTAX do Banco Central, usada na conversão das despesas em moeda estrangeira
+    'ptax' => [
+        'base_url' => env('PTAX_BASE_URL', 'https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/'),
+        'timeout' => (int) env('PTAX_TIMEOUT', 10),
+        // A PTAX é publicada no horário de Brasília: define o que é "hoje" para a cotação
+        'timezone' => 'America/Sao_Paulo',
+    ],
+
 ];
