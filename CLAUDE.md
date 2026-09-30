@@ -403,6 +403,14 @@ Alpine e interatividade:
 - Datas no JavaScript: nunca `toISOString()` para gerar `AAAA-MM-DD` (converte para UTC e muda o dia no Brasil); monte com as partes locais.
 - Depois de `</x-slot>` sempre quebre a linha: o Blade compila para `@endslot` sem espaço, e texto colado (`</x-slot>Texto`) quebra a diretiva e deixa um buffer de saída aberto.
 
+### Responsivo (celular)
+
+- Abaixo de `lg` a sidebar vira barra superior fixa + gaveta lateral (`layouts/partials/sidebar.blade.php`, o mesmo menu nos dois).
+- Tabelas: `x-ui.table` aceita o slot `mobile` (um `<li>` por item). Com ele, abaixo de `md` a tabela dá lugar a uma lista em cards com o essencial numa olhada (valor em BRL em destaque, status, detalhes secundários em texto menor). Toolbar e paginação são compartilhadas.
+- Grids com conteúdo largo usam `grid-cols-1` e `min-w-0` nos filhos: sem isso a coluna cresce até o tamanho do conteúdo e vaza da tela.
+- Formulário longo no celular: barra fixa no rodapé com o estado (ex.: soma do rateio) e a ação principal; os botões do cabeçalho ficam a partir de `sm`.
+- Paginação no celular: anterior, "X de Y" e próxima.
+
 ### Componentes Livewire
 
 - Páginas são componentes Livewire em classe com sufixo `Page`, agrupados por domínio (`App\Livewire\Reports\UnitTotalsPage`, view em `resources/views/livewire/reports/unit-totals-page.blade.php`), registrados direto na rota (`Route::get('/reports', UnitTotalsPage::class)`) e com `#[Title]`.

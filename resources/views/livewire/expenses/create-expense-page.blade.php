@@ -10,11 +10,15 @@
     $allocationsError = $errors->first('form.allocations');
 @endphp
 
-<form novalidate wire:submit="save" class="flex flex-col gap-6">
+{{-- pb-24 no celular: espaço para a barra fixa de salvar não cobrir o fim do formulário --}}
+<form novalidate wire:submit="save" class="flex flex-col gap-6 pb-24 sm:pb-0">
     <x-ui.page-header title="Nova despesa" :breadcrumbs="['Despesas' => route('expenses.index'), 'Nova despesa' => null]">
         <x-slot:actions>
-            <x-ui.button variant="outline" :href="route('expenses.index')">Cancelar</x-ui.button>
-            <x-ui.button type="submit" icon="check" wire:target="save" :disabled="! $hasUnits">Salvar despesa</x-ui.button>
+            {{-- No celular, salvar fica na barra fixa do rodapé --}}
+            <div class="hidden items-center gap-2 sm:flex">
+                <x-ui.button variant="outline" :href="route('expenses.index')">Cancelar</x-ui.button>
+                <x-ui.button type="submit" icon="check" wire:target="save" :disabled="! $hasUnits">Salvar despesa</x-ui.button>
+            </div>
         </x-slot:actions>
     </x-ui.page-header>
 
@@ -27,8 +31,8 @@
         </x-ui.alert>
     @endunless
 
-    <div class="grid items-start gap-6 lg:grid-cols-[1fr_20rem]">
-        <div class="flex flex-col gap-6">
+    <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <div class="flex min-w-0 flex-col gap-6">
             <x-ui.card title="Dados da despesa" description="Informações da nota ou fatura.">
                 <div class="grid gap-4 sm:grid-cols-2">
                     <x-ui.input wire:model="form.description" label="Descrição" placeholder="Ex.: Licença CRM" required full class="sm:col-span-2" />
@@ -60,10 +64,11 @@
                     </div>
 
                     @foreach ($form->allocations as $index => $allocation)
-                        <div class="grid items-start gap-3 sm:grid-cols-[1fr_8rem_8rem_2.5rem]" wire:key="allocation-{{ $index }}">
-                            <x-ui.select wire:model.live="form.allocations.{{ $index }}.unit_id" placeholder="Selecione a unidade" :options="$this->unitOptions" :aria-label="'Unidade da linha '.($index + 1)" full />
+                        {{-- Celular: unidade na linha de cima; percentual, valor e remover na de baixo --}}
+                        <div class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-start gap-x-3 gap-y-2 sm:grid-cols-[1fr_8rem_8rem_2.5rem]" wire:key="allocation-{{ $index }}">
+                            <x-ui.select wire:model.live="form.allocations.{{ $index }}.unit_id" placeholder="Selecione a unidade" :options="$this->unitOptions" :aria-label="'Unidade da linha '.($index + 1)" class="col-span-3 sm:col-span-1" full />
                             <x-ui.input wire:model.live.debounce.400ms="form.allocations.{{ $index }}.percentage" icon="percent" icon-direction="right" placeholder="0,00" inputmode="decimal" :aria-label="'Percentual da linha '.($index + 1)" full />
-                            <p class="flex h-10 items-center text-sm font-medium text-ds-gray-900 tabular-nums">
+                            <p class="flex h-10 min-w-20 items-center text-sm font-medium text-ds-gray-900 tabular-nums">
                                 {{ isset($preview['shares'][$index]) ? Format::money($preview['shares'][$index], $currency) : '—' }}
                             </p>
                             <x-ui.button variant="ghost" icon="trash-2" icon-only :aria-label="'Remover linha '.($index + 1)" wire:click="removeAllocation({{ $index }})" :disabled="count($form->allocations) === 1" />
@@ -104,7 +109,7 @@
             </x-ui.card>
         </div>
 
-        <aside class="flex flex-col gap-4 lg:sticky lg:top-8">
+        <aside class="flex min-w-0 flex-col gap-4 lg:sticky lg:top-8">
             <x-ui.card title="Resumo">
                 <dl class="flex flex-col gap-3 text-sm">
                     <div class="flex justify-between gap-4"><dt class="text-ds-gray-500">Valor original</dt><dd class="font-semibold tabular-nums">{{ $preview['amountCents'] !== null ? Format::money($preview['amountCents'], $currency) : '—' }}</dd></div>
@@ -138,5 +143,20 @@
                 <p class="leading-relaxed">R$ 100,00 em 33,34% / 33,33% / 33,33% vira R$ 33,34 + R$ 33,33 + R$ 33,33. Os centavos que sobram vão para as maiores frações.</p>
             </div>
         </aside>
+    </div>
+
+    {{-- Celular: soma do rateio e salvar sempre ao alcance do polegar --}}
+    <div class="fixed inset-x-0 bottom-0 z-30 flex items-center gap-3 border-t border-ds-gray-200 bg-ds-white/95 px-4 py-3 backdrop-blur sm:hidden">
+        <div class="flex min-w-0 flex-1 flex-col text-xs">
+            @if ($total === AllocationSplitter::TOTAL_BASIS_POINTS)
+                <span class="font-semibold text-ds-green-800">100% alocado</span>
+            @elseif ($total === null)
+                <span class="font-medium text-ds-gray-600">Informe os percentuais</span>
+            @else
+                <span class="font-semibold text-ds-yellow-800">{{ Format::decimal($total) }}% alocado</span>
+            @endif
+            <span class="truncate text-ds-gray-500 tabular-nums">{{ $preview['amountCents'] !== null ? Format::money($preview['amountCents'], $currency) : 'Sem valor' }}</span>
+        </div>
+        <x-ui.button type="submit" icon="check" wire:target="save" :disabled="! $hasUnits">Salvar despesa</x-ui.button>
     </div>
 </form>

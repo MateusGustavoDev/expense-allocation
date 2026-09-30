@@ -6,6 +6,33 @@
     </x-ui.page-header>
 
     <x-ui.table caption="Empresas cadastradas">
+        <x-slot:mobile>
+            @forelse ($this->companies as $company)
+                <li wire:key="company-card-{{ $company->id }}" class="flex items-center gap-2 py-3 pr-2 pl-4">
+                    <div class="flex min-w-0 flex-1 flex-col gap-0.5">
+                        <p class="truncate text-sm font-medium text-ds-gray-900">{{ $company->name }}</p>
+                        <p class="text-xs text-ds-gray-500">{{ $company->units_count }} {{ Str::plural('unidade', $company->units_count) }}</p>
+                    </div>
+                    <x-ui.dropdown>
+                        <x-slot:trigger>
+                            <x-ui.button variant="ghost" size="sm" icon="ellipsis" icon-only aria-label="Ações de {{ $company->name }}" />
+                        </x-slot:trigger>
+                        <x-ui.dropdown.item icon="pencil" wire:click="edit({{ $company->id }})">Editar</x-ui.dropdown.item>
+                        <x-ui.dropdown.separator />
+                        <x-ui.dropdown.item icon="trash-2" danger wire:click="confirmDelete({{ $company->id }})">Excluir</x-ui.dropdown.item>
+                    </x-ui.dropdown>
+                </li>
+            @empty
+                <li>
+                    <x-ui.empty icon="briefcase" title="Nenhuma empresa cadastrada" description="Cadastre as empresas do grupo antes das unidades.">
+                        <x-slot:action>
+                            <x-ui.button size="sm" icon="plus" wire:click="create">Nova empresa</x-ui.button>
+                        </x-slot:action>
+                    </x-ui.empty>
+                </li>
+            @endforelse
+        </x-slot:mobile>
+
         <x-slot:head>
             <x-ui.table.head>Empresa</x-ui.table.head>
             <x-ui.table.head>Unidades</x-ui.table.head>

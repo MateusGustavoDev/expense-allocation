@@ -50,8 +50,10 @@
                 $companiesCount = collect($report->units)->pluck('companyId')->unique()->count();
             @endphp
 
-            <div class="grid gap-4 md:grid-cols-3">
+            {{-- No celular o total ocupa a linha inteira e os outros dois indicadores dividem a de baixo --}}
+            <div class="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
                 <x-ui.stat
+                    class="col-span-2 md:col-span-1"
                     label="Total rateado no período"
                     :value="Format::money($report->totalCents)"
                     hint="Soma das despesas convertidas"
@@ -81,6 +83,35 @@
                         </p>
                     </div>
                 </x-slot:toolbar>
+
+                <x-slot:mobile>
+                    @forelse ($report->units as $unit)
+                        <li wire:key="unit-card-{{ $unit->unitId }}" class="flex flex-col gap-2.5 px-4 py-3.5">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="flex min-w-0 flex-col gap-0.5">
+                                    <p class="truncate text-sm font-medium text-ds-gray-900">{{ $unit->unitName }}</p>
+                                    <p class="truncate text-xs text-ds-gray-500">{{ $unit->companyName }} · {{ $unit->expensesCount }} {{ Str::plural('despesa', $unit->expensesCount) }}</p>
+                                </div>
+                                <p @class(['shrink-0 text-sm tabular-nums', 'font-semibold text-ds-gray-900' => $unit->totalCents > 0, 'text-ds-gray-400' => $unit->totalCents === 0])>{{ Format::money($unit->totalCents) }}</p>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-ds-gray-100" aria-hidden="true">
+                                    <div class="h-full rounded-full bg-ds-primary-500" style="width: {{ $unit->shareBasisPoints / 100 }}%"></div>
+                                </div>
+                                <span class="w-12 text-right text-xs text-ds-gray-700 tabular-nums">{{ Format::percent($unit->shareBasisPoints) }}</span>
+                            </div>
+                        </li>
+                    @empty
+                        <li><x-ui.empty icon="building-2" title="Nenhuma unidade cadastrada" description="Cadastre as unidades que recebem o rateio das despesas." /></li>
+                    @endforelse
+
+                    @if ($report->units !== [])
+                        <li class="flex items-center justify-between gap-3 bg-ds-gray-50 px-4 py-3 text-sm font-semibold text-ds-gray-900">
+                            <span>Total do período</span>
+                            <span class="tabular-nums">{{ Format::money($report->totalCents) }}</span>
+                        </li>
+                    @endif
+                </x-slot:mobile>
 
                 <x-slot:head>
                     <x-ui.table.head>Unidade</x-ui.table.head>

@@ -1,5 +1,6 @@
 @use('App\Support\Format')
 @use('App\Enums\ConversionStatus')
+@use('App\Enums\Currency')
 
 @php
     $expenses = $this->expenses;
@@ -18,9 +19,12 @@
         <x-slot:toolbar>
             <x-ui.table.toolbar>
                 <x-ui.input wire:model.live.debounce.300ms="search" icon="search" size="sm" placeholder="Buscar por descrição ou fornecedor" aria-label="Buscar despesas" class="w-full md:w-72" full />
-                <x-ui.date-range-picker wire:model.live="period" size="sm" placeholder="Qualquer data" aria-label="Filtrar por período" />
-                <x-ui.select wire:model.live="currency" size="sm" placeholder="Todas as moedas" :options="['BRL' => 'Real (BRL)', 'USD' => 'Dólar (USD)']" aria-label="Filtrar por moeda" />
-                <x-ui.select wire:model.live="status" size="sm" placeholder="Todos os status" :options="$statusOptions" aria-label="Filtrar por status" />
+                <x-ui.date-range-picker wire:model.live="period" size="sm" placeholder="Qualquer data" aria-label="Filtrar por período" class="w-full sm:w-auto" full />
+                {{-- No celular, moeda e status lado a lado; a partir de sm, seguem em linha com os demais filtros --}}
+                <div class="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
+                    <x-ui.select wire:model.live="currency" size="sm" placeholder="Todas as moedas" :options="['BRL' => 'Real (BRL)', 'USD' => 'Dólar (USD)']" aria-label="Filtrar por moeda" full />
+                    <x-ui.select wire:model.live="status" size="sm" placeholder="Todos os status" :options="$statusOptions" aria-label="Filtrar por status" full />
+                </div>
 
                 @if ($this->hasFilters())
                     <x-slot:end>
@@ -29,6 +33,44 @@
                 @endif
             </x-ui.table.toolbar>
         </x-slot:toolbar>
+
+        <x-slot:mobile>
+            @forelse ($expenses as $expense)
+                <li wire:key="expense-card-{{ $expense->id }}" class="flex items-start gap-2 py-3.5 pr-2 pl-4" wire:loading.class="opacity-60">
+                    <a href="{{ route('expenses.show', $expense) }}" class="flex min-w-0 flex-1 flex-col gap-2">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex min-w-0 flex-col gap-0.5">
+                                <p class="line-clamp-2 text-sm font-medium text-ds-gray-900">{{ $expense->description }}</p>
+                                <p class="truncate text-xs text-ds-gray-500">{{ $expense->supplier }} · {{ Format::date($expense->date) }}</p>
+                            </div>
+                            <p @class(['shrink-0 text-sm tabular-nums', 'font-semibold text-ds-gray-900' => $expense->amount_brl_cents !== null, 'text-ds-gray-400' => $expense->amount_brl_cents === null])>
+                                {{ $expense->amount_brl_cents === null ? '—' : Format::money($expense->amount_brl_cents) }}
+                            </p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-ds-gray-500">
+                            <x-ui.status-badge :status="$expense->conversion_status" />
+                            <span class="inline-flex items-center gap-1"><x-ui.icon name="split" class="size-3.5" /> {{ $expense->allocations_count }} {{ Str::plural('unidade', $expense->allocations_count) }}</span>
+                            @if ($expense->currency !== Currency::BRL)
+                                <span class="tabular-nums">{{ Format::money($expense->amount_cents, $expense->currency) }}</span>
+                            @endif
+                        </div>
+                    </a>
+                    <x-ui.dropdown>
+                        <x-slot:trigger>
+                            <x-ui.button variant="ghost" size="sm" icon="ellipsis" icon-only aria-label="Ações de {{ $expense->description }}" />
+                        </x-slot:trigger>
+                        <x-ui.dropdown.item icon="eye" :href="route('expenses.show', $expense)">Ver detalhes</x-ui.dropdown.item>
+                        @if ($expense->conversion_status !== ConversionStatus::Converted)
+                            <x-ui.dropdown.item icon="refresh-cw" wire:click="retryConversion({{ $expense->id }})">Reenviar conversão</x-ui.dropdown.item>
+                        @endif
+                    </x-ui.dropdown>
+                </li>
+            @empty
+                <li>
+                    <x-ui.empty :icon="$this->hasFilters() ? 'search' : 'receipt'" :title="$this->hasFilters() ? 'Nenhuma despesa encontrada' : 'Nenhuma despesa ainda'" :description="$this->hasFilters() ? 'Nenhuma despesa corresponde aos filtros aplicados.' : 'Cadastre uma despesa ou importe um arquivo CSV para começar.'" />
+                </li>
+            @endforelse
+        </x-slot:mobile>
 
         <x-slot:head>
             <x-ui.table.head sortable="date" :sorted-by="$sortColumn" :direction="$sortDirection">Data</x-ui.table.head>
