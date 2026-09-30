@@ -1,0 +1,15 @@
+data;descricao;fornecedor;valor;moeda;rateio
+2026-09-01;Licença CRM;Fornecedor X;1500.00;USD;unidade-a:50|unidade-b:30|unidade-c:20
+2026-09-02;Hospedagem do site;Hostinger;89.90;BRL;unidade-a:100
+2026-09-03;Honorários contábeis;Escritório Contábil Silva;4800.00;BRL;unidade-a:40|unidade-b:30|unidade-c:30
+2026-09-31;Licença Figma;Figma Inc.;180.00;USD;unidade-a:100
+2026-09-05;Café da recepção;Padaria Central;100.00;BRL;unidade-a:33.34|unidade-b:33.33|unidade-c:33.33
+2026-09-08;Seguro patrimonial;Porto Seguro;1250.00;BRL;unidade-b:50|unidade-c:50
+2026-09-09;Assinatura Slack;Slack Technologies;96.00;USD;unidade-a:60|unidade-b:40
+2026-09-12;Coworking;Espaço Hub;900.00;BRL;unidade-a:50|unidade-b:40
+
+2026-09-15;Google Workspace;Google;540.00;USD;unidade-a:34|unidade-b:33|unidade-c:33
+2026-09-18;Consultoria jurídica;Advocacia Lima;6000.00;BRL;unidade-a:25|unidade-b:25|unidade-c:50
+2026-09-20;Frete de equipamentos;Correios;85.40;BRL;unidade-x:100
+2026-09-22;Licença Figma;Figma Inc.;180.00;USD;unidade-a:50|unidade-c:50
+2026-09-25;Material de escritório;Kalunga;312.75;BRL;unidade-c:100

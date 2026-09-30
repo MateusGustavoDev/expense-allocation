@@ -85,9 +85,12 @@ app/
 ├── Livewire/                # Componentes da interface, por domínio
 ├── Models/
 ├── Providers/               # Bindings do container (interface -> implementação)
-└── Services/                # Integrações externas e lógica pura reutilizável
-    ├── Money/AllocationSplitter.php
-    └── ExchangeRates/BcbPtaxProvider.php
+├── Services/                # Integrações externas e lógica pura reutilizável
+│   ├── Csv/CsvReader.php
+│   ├── Money/               # AllocationSplitter, CurrencyConverter, Decimal
+│   └── ExchangeRates/       # BcbPtaxProvider, ExchangeRates (cache)
+└── Validation/              # Regras compartilhadas entre API e CSV (ExpenseRules)
+lang/pt_BR/                  # Mensagens de validação em português e nomes dos campos
 database/
 ├── factories/
 ├── migrations/
@@ -191,11 +194,14 @@ Todo payload e toda resposta usam **`snake_case`** — padrão nativo do Laravel
 
 ### Importação CSV
 
-- Formato: `data;descricao;fornecedor;valor;moeda;rateio`, com cabeçalho. Rateio: `slug-unidade:percentual|slug-unidade:percentual`.
-- Unidades são referenciadas no CSV pelo `slug` (único).
-- Cada linha é validada **isoladamente** (`Validator::make()` com as mesmas regras da criação) e criada pela mesma `CreateExpense` Action, cada uma em sua própria transação. Uma linha inválida **nunca** interrompe as demais.
-- Retorno: `ImportReport` com total de linhas, quantidade importada e a lista de erros por **número da linha** (considerando o cabeçalho) com as mensagens.
-- Tratar BOM UTF-8, linhas em branco e quebras de linha `\r\n`.
+- Formato: `data;descricao;fornecedor;valor;moeda;rateio`, com cabeçalho. Rateio: `slug-unidade:percentual|slug-unidade:percentual`. Exemplo em `docs/examples/despesas-setembro.csv`.
+- Unidades são referenciadas no CSV pelo `slug` (único), resolvido com uma única consulta para o arquivo inteiro.
+- Cada linha é validada **isoladamente** com as mesmas `ExpenseRules` da API (`Validator::make()`) e criada pela mesma `CreateExpense` Action, cada uma em sua própria transação. Uma linha inválida **nunca** interrompe as demais.
+- Moeda e slug aceitam minúsculas; descrição e fornecedor têm espaços repetidos colapsados, como na API.
+- Arquivo vazio ou com cabeçalho diferente do esperado é recusado inteiro (`InvalidCsvFileException`, HTTP 422).
+- Retorno: `ImportReport` com total de linhas, quantidade importada e a lista de erros por **número da linha no arquivo** (cabeçalho = linha 1), com o conteúdo original e as mensagens em português.
+- `Services/Csv/CsvReader` trata BOM UTF-8, linhas em branco (sem deslocar a numeração), `\r\n` e arquivos em Windows-1252. Cada registro ocupa uma linha física.
+- Importação síncrona, dentro da requisição (limite de 5 MB). Arquivos grandes seriam processados em um job, com o relatório consultado depois.
 
 ### Relatório
 

@@ -5,16 +5,20 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Actions\Expenses\CreateExpense;
+use App\Actions\Expenses\ImportExpensesFromCsv;
 use App\Actions\Expenses\RequeueExpenseConversion;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ImportExpensesRequest;
 use App\Http\Requests\ListExpensesRequest;
 use App\Http\Requests\StoreExpenseRequest;
 use App\Http\Resources\ExpenseResource;
+use App\Http\Resources\ImportReportResource;
 use App\Models\Expense;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\UploadedFile;
 
 #[Group('Despesas', weight: 3)]
 final class ExpenseController extends Controller
@@ -49,6 +53,20 @@ final class ExpenseController extends Controller
     {
         /** @status 201 */
         return ExpenseResource::make($createExpense->execute($request->toData()));
+    }
+
+    /**
+     * Importar despesas por CSV
+     *
+     * Formato: `data;descricao;fornecedor;valor;moeda;rateio`, com cabeçalho. Rateio: `slug-da-unidade:percentual`
+     * separados por `|`. Linhas inválidas não impedem a importação das válidas: o relatório lista os erros por linha.
+     */
+    public function import(ImportExpensesRequest $request, ImportExpensesFromCsv $import): ImportReportResource
+    {
+        /** @var UploadedFile $file */
+        $file = $request->file('file');
+
+        return ImportReportResource::make($import->execute($file->getRealPath()));
     }
 
     /**
