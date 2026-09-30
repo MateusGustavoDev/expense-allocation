@@ -147,7 +147,7 @@
                         <x-ui.button variant="outline" icon="refresh-cw" icon-only aria-label="Atualizar" />
                         <x-ui.button variant="ghost" size="sm" icon="ellipsis" icon-only aria-label="Ações" />
                         <x-ui.button variant="danger" icon="trash-2" icon-only aria-label="Excluir" />
-                        <x-ui.button variant="link" icon="external-link" icon-direction="right" href="#">Abrir documentação</x-ui.button>
+                        <x-ui.button variant="link" href="#">Abrir documentação</x-ui.button>
                     </div>
                     <div class="max-w-sm">
                         <x-ui.button full icon="log-in">Entrar (full)</x-ui.button>
