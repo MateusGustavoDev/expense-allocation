@@ -391,6 +391,8 @@ Alpine e interatividade:
 - Filtros e paginação ficam na URL com `#[Url]` (link compartilhável); valor inválido vindo da URL volta ao padrão no `mount()`.
 - Dados derivados com `#[Computed]` (≈ `useMemo`); invalide com `unset($this->propriedade)` quando a entrada muda.
 - Formulários com **Form Objects** (`Livewire\Form`).
+- `<form novalidate>`: a validação é a do servidor (mesmas regras da API, mensagens em português); a nativa do navegador bloquearia o submit antes.
+- Propriedade pública e método nunca com o mesmo nome (`$sortBy` + `sortBy()`): no navegador, `$wire.sortBy` devolve a propriedade e a ação deixa de existir. Use `#[Url(as: ...)]` se o nome da URL importar.
 - Estado de carregamento com `wire:loading` / `wire:target` (ex.: `wire:loading.class="opacity-60"` no conteúdo que recalcula).
 - Use `wire:model` padrão (sincroniza no submit); `wire:model.live` só quando a UI precisa reagir na hora (filtros, soma do rateio).
 - Interações puramente visuais (abrir modal, mostrar/ocultar) com **Alpine.js** no cliente — sem roundtrip ao servidor.
@@ -400,7 +402,7 @@ Alpine e interatividade:
 
 ### Formatação para exibição
 
-- `App\Support\Format`: `money()` (`R$ 1.500,00`, `US$ 1.500,00`), `decimal()`, `percent()` (pontos-base → `31,9%`) e `date()` (`01/09/2026`). Parte de inteiros e não depende da extensão intl.
+- `App\Support\Format`: `money()` (`R$ 1.500,00`, `US$ 1.500,00`), `decimal()`, `percent()` (pontos-base → `31,9%`), `rate()` (cotação com 4 casas: `5,4123`) e `date()` (`01/09/2026`). Parte de inteiros e não depende da extensão intl.
 - Nas views: `@use('App\Support\Format')` e `{{ Format::money($cents) }}`. Nunca formate dinheiro com `number_format` sobre float.
 
 ## Testes
