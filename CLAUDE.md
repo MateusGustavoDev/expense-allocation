@@ -508,7 +508,7 @@ Serviços por environment, todos da mesma imagem:
 - `healthcheckPath: /up` (rota de health nativa do Laravel) — a troca de versão só acontece se a nova instância responder.
 - Migrations devem ser **compatíveis com a versão anterior do código** durante o deploy (adicionar coluna nullable primeiro, remover só num deploy posterior).
 - O HTTPS termina no proxy do Railway: `trustProxies(at: '*')` em `bootstrap/app.php` faz o Laravel gerar URLs `https`.
-- URLs: staging em `https://expense-allocation-staging.up.railway.app`, produção em `https://web-production-f7d39.up.railway.app`.
+- URLs: staging em `https://expense-allocation-staging.up.railway.app`, produção em `https://expense-allocation.up.railway.app`.
 - Variáveis compartilhadas do environment não entram sozinhas nos serviços: cada serviço as referencia com `${{shared.NOME}}`. Referência a outro serviço (`${{MySQL.MYSQLHOST}}`) vai direto em cada serviço — encadeada numa variável compartilhada, ela não resolve.
 - O MySQL lê `MYSQL_ROOT_PASSWORD` só no primeiro boot: defina a senha antes de subir o banco. Volume inicializado por uma versão maior (ex.: 9) não abre numa menor (8.4).
 - Usuários de staging e produção: `railway ssh -s web -e <environment> -- php artisan users:create`.
