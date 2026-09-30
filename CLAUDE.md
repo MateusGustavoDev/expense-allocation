@@ -89,6 +89,7 @@ app/
 │   ├── Csv/CsvReader.php
 │   ├── Money/               # AllocationSplitter, CurrencyConverter, Decimal
 │   └── ExchangeRates/       # BcbPtaxProvider, ExchangeRates (cache)
+├── Support/                 # Utilitários de apresentação (Format)
 └── Validation/              # Regras compartilhadas entre API e CSV (ExpenseRules)
 lang/pt_BR/                  # Mensagens de validação em português e nomes dos campos
 database/
@@ -385,16 +386,22 @@ Alpine e interatividade:
 
 ### Componentes Livewire
 
-- Um componente por tela ou bloco com estado (`ExpenseForm`, `ExpenseList`, `CsvImport`, `UnitTotalsReport`).
-- O componente **só** orquestra: valida, chama a Action, atualiza o estado. Regra de negócio fica na Action.
+- Páginas são componentes Livewire em classe com sufixo `Page`, agrupados por domínio (`App\Livewire\Reports\UnitTotalsPage`, view em `resources/views/livewire/reports/unit-totals-page.blade.php`), registrados direto na rota (`Route::get('/reports', UnitTotalsPage::class)`) e com `#[Title]`.
+- O componente **só** orquestra: valida, chama a Action, atualiza o estado. Regra de negócio fica na Action — a página de relatório usa a mesma `GetUnitTotalsReport` da API.
+- Filtros e paginação ficam na URL com `#[Url]` (link compartilhável); valor inválido vindo da URL volta ao padrão no `mount()`.
+- Dados derivados com `#[Computed]` (≈ `useMemo`); invalide com `unset($this->propriedade)` quando a entrada muda.
 - Formulários com **Form Objects** (`Livewire\Form`).
-- Estado de carregamento com `wire:loading` / `wire:target`.
-- Use `wire:model` padrão (sincroniza no submit); `wire:model.live` só quando a UI precisa reagir a cada tecla (ex.: soma do rateio em tempo real).
+- Estado de carregamento com `wire:loading` / `wire:target` (ex.: `wire:loading.class="opacity-60"` no conteúdo que recalcula).
+- Use `wire:model` padrão (sincroniza no submit); `wire:model.live` só quando a UI precisa reagir na hora (filtros, soma do rateio).
 - Interações puramente visuais (abrir modal, mostrar/ocultar) com **Alpine.js** no cliente — sem roundtrip ao servidor.
 - Comunicação entre componentes por eventos (`$this->dispatch()` + `#[On]`).
 - Propriedades públicas são enviadas ao navegador: nunca guarde dado sensível nelas, e trate-as como entrada do usuário (valide sempre).
+- Datas relativas ("hoje", "este mês") usam `config('app.business_timezone')` (America/Sao_Paulo); servidor e banco seguem em UTC.
 
----
+### Formatação para exibição
+
+- `App\Support\Format`: `money()` (`R$ 1.500,00`, `US$ 1.500,00`), `decimal()`, `percent()` (pontos-base → `31,9%`) e `date()` (`01/09/2026`). Parte de inteiros e não depende da extensão intl.
+- Nas views: `@use('App\Support\Format')` e `{{ Format::money($cents) }}`. Nunca formate dinheiro com `number_format` sobre float.
 
 ## Testes
 
@@ -413,6 +420,7 @@ Padrões:
 - HTTP externo **sempre** falseado com `Http::fake()` — `Http::preventStrayRequests()` está ativo no `TestCase` e faz qualquer requisição não simulada falhar. Helpers `fakePtax()` e `fakePtaxDown()` em `tests/Pest.php`.
 - A fila roda em modo `sync` nos testes: quem não testa o job em si usa `Queue::fake()`.
 - Regras que dependem de "hoje" fixam o relógio com `$this->travelTo()`.
+- Componentes Livewire com `Livewire::test()` (`->set()`, `->assertSee()`, `->assertHasErrors()`) e `Livewire::withQueryParams()` para filtros da URL.
 - `Queue::fake()` para verificar dispatch; teste o Job chamando `handle()` diretamente para verificar comportamento.
 - Um comportamento por teste, nome descrevendo a regra: `it('keeps the expense when the exchange API is down')`.
 - Banco de testes MySQL (mesmo engine de produção), não SQLite.
