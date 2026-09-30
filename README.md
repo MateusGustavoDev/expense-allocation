@@ -4,11 +4,8 @@ Sistema para ratear despesas compartilhadas entre unidades de empresas de um mes
 
 **Stack:** Laravel 13 · PHP 8.4 · MySQL 8.4 · Blade + Livewire 4 · Tailwind CSS 4 · Pest · Docker
 
-| Ambiente | Endereço |
-| --- | --- |
-| Produção | https://web-production-f7d39.up.railway.app |
-| Staging | https://expense-allocation-staging.up.railway.app |
-| Documentação da API (OpenAPI) | `/docs/api` em qualquer ambiente |
+- **Produção:** https://expense-allocation.up.railway.app
+- **Documentação da API (OpenAPI):** https://expense-allocation.up.railway.app/docs/api
 
 As credenciais de acesso à produção foram enviadas junto com a entrega. Localmente, o seeder cria um usuário de desenvolvimento (veja abaixo).
 
@@ -94,13 +91,6 @@ Staging e produção não têm cadastro público: usuários são criados com `ph
 
 ## Decisões
 
-### Arquitetura
-
-- **API e interface chamam as mesmas Actions.** `CreateExpense`, `ImportExpensesFromCsv`, `GetUnitTotalsReport`, `RequeueExpenseConversion` e `AuthenticateUser` atendem tanto o controller da API quanto o componente Livewire. A regra de negócio mora num lugar só; controllers e componentes apenas validam a entrada, chamam a Action e devolvem a resposta.
-- **CRUD simples sem Action.** Empresas e unidades usam o Eloquent direto no controller: uma classe que só repassaria a chamada para o model seria indireção sem ganho.
-- **Regras de validação compartilhadas** (`app/Validation`) entre API, CSV e telas, com mensagens em português.
-- **Livewire em vez de uma SPA.** Uma aplicação só, renderizada no servidor, sem duplicar o contrato da API no front.
-
 ### Dinheiro e rateio
 
 - **Valores em centavos (inteiro) e percentuais em pontos-base (10000 = 100%).** Nunca float: `0.1 + 0.2` não é `0.3`. A conversão entre texto decimal e centavos acontece só na borda (requisição, CSV, resposta), por uma função única e testada (`Decimal`).
@@ -122,13 +112,6 @@ Staging e produção não têm cadastro público: usuários são criados com `ph
 - **Cada linha do CSV é validada e gravada na própria transação**, com as mesmas regras da criação pela API. Uma linha inválida nunca derruba as outras, e o relatório aponta o erro pelo número da linha no arquivo.
 - **O leitor tolera arquivos do mundo real:** BOM UTF-8, quebras `\r\n`, linhas em branco e arquivos em Windows-1252, a codificação que o Excel usa no Brasil.
 - **O relatório soma no banco** (`SUM ... GROUP BY`), não em PHP, e considera só despesas já convertidas. Pendentes e falhas do período aparecem à parte, para deixar claro quando o total está incompleto.
-
-### API e autenticação
-
-- **Erros sempre em JSON, em português e sem detalhes internos**, inclusive os gerados pelo framework (registro ou rota inexistente, método não permitido, 500). Validação devolve os erros por campo.
-- **Documentação OpenAPI gerada a partir do código** (Scramble): tipos, validações e respostas vêm dos Form Requests e Resources, sem anotações duplicadas.
-- **API com token Bearer (Sanctum) e interface com sessão.** Os tokens são revogáveis e expiram em 7 dias. As duas usam a mesma verificação de credencial e o mesmo limite de 5 tentativas por minuto; o erro não revela se o e-mail existe.
-- **Um teste percorre a tabela de rotas** e falha se alguma rota da API ficar sem autenticação.
 
 ### Sobre CI/CD, ambientes e design system
 
