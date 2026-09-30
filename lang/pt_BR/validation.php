@@ -53,7 +53,7 @@ return [
     'doesnt_start_with' => 'O :attribute não pode começar com um dos seguintes: :values.',
     'email' => 'O campo :attribute deve ser um endereço de e-mail válido.',
     'ends_with' => 'O campo :attribute deve terminar com um dos seguintes: :values',
-    'enum' => 'O :attribute selecionado é inválido.',
+    'enum' => 'O campo :attribute selecionado é inválido.',
     'exists' => 'O campo :attribute selecionado é inválido.',
     'extensions' => 'O campo :attribute deve conter uma das seguintes extensões: :values.',
     'file' => 'O campo :attribute deve ser um arquivo.',
@@ -185,9 +185,6 @@ return [
         'allocations.*.unit_id' => [
             'exists' => 'A unidade informada não existe.',
             'distinct' => 'A unidade aparece mais de uma vez no rateio.',
-        ],
-        'currency' => [
-            'enum' => 'A moeda deve ser BRL ou USD.',
         ],
         'date' => [
             'date_format' => 'A data deve estar no formato AAAA-MM-DD e ser uma data válida.',
