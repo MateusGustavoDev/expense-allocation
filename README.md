@@ -28,6 +28,12 @@ docker compose exec app php artisan migrate --seed
 
 Acesse **http://localhost:8000** e entre com `admin@example.com` / `password`. Esse usuário só é criado no ambiente local.
 
+Para ver a interface preenchida, carregue os dados de demonstração: um grupo com 3 empresas, 5 unidades e seis meses de despesas realistas (aluguéis, SaaS em dólar, contas, eventuais), rateadas pelo número de funcionários de cada unidade. As despesas passam pela mesma regra da API, e as em dólar são convertidas pelo worker com a cotação real de cada data.
+
+```bash
+docker compose exec app php artisan db:seed --class=DemoSeeder
+```
+
 Na primeira subida, o container `vite` instala as dependências do Node antes de servir os assets: se a página abrir sem estilo, aguarde alguns segundos e recarregue.
 
 | Serviço | Papel | Porta |
@@ -115,7 +121,6 @@ Sei que um projeto deste tamanho provavelmente não precisaria de pipeline de CI
 
 - **Edição e exclusão de despesas.** Editar uma despesa já convertida e rateada levanta perguntas de negócio (reconverter? manter histórico?), listadas abaixo. Preferi não decidir isso sozinho.
 - **Testes E2E no navegador.** As regras estão cobertas por testes unitários e de feature, e as telas por testes de componente Livewire. Os fluxos de interface foram verificados manualmente no navegador; automatizá-los seria o próximo passo.
-- **Seeder com dados de demonstração.** O ambiente local sobe só com o usuário; o CSV de exemplo em `docs/examples` cumpre o papel de carga inicial.
 - **Menu para telas pequenas.** A interface foi pensada para desktop; abaixo de 1024px a navegação lateral não aparece.
 - **Importação assíncrona.** O CSV é processado dentro da requisição, com limite de 5 MB. Arquivos grandes iriam para um job, com o relatório consultado depois.
 - **Proteção contra importação duplicada.** Enviar o mesmo arquivo duas vezes cria as despesas duas vezes. A regra certa depende do negócio (ver perguntas).
