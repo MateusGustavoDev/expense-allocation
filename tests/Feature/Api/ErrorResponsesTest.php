@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 use App\Models\Expense;
 use App\Models\ExpenseAllocation;
+use App\Models\Unit;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Support\Facades\Route;
 
@@ -108,4 +110,37 @@ it('keeps the validation errors per field', function () {
 
 it('does not change how web pages render errors', function () {
     $this->get('/expenses/999')->assertNotFound()->assertDontSee('Despesa não encontrada.');
+});
+
+// Em produção o debug fica desligado: os erros previstos não podem cair no caso do 500 genérico
+describe('with debug off, as in production', function () {
+    beforeEach(fn () => config(['app.debug' => false]));
+
+    it('keeps validation errors as 422 with the errors per field', function () {
+        $this->postJson('/api/units', [])
+            ->assertUnprocessable()
+            ->assertJsonPath('errors.name.0', 'O campo nome é obrigatório.');
+    });
+
+    it('keeps domain rule violations as 422', function () {
+        $units = Unit::factory()->count(2)->create();
+
+        $this->postJson('/api/expenses', [
+            'description' => 'Licença CRM',
+            'supplier' => 'Fornecedor X',
+            'date' => '2026-09-01',
+            'amount' => '100.00',
+            'currency' => 'BRL',
+            'allocations' => [
+                ['unit_id' => $units[0]->id, 'percentage' => '50'],
+                ['unit_id' => $units[1]->id, 'percentage' => '40'],
+            ],
+        ])->assertUnprocessable()->assertJsonStructure(['message', 'errors']);
+    });
+
+    it('passes ready-made responses through', function () {
+        Route::get('/api/_test/response', fn () => throw new HttpResponseException(response()->json(['ok' => true], 202)));
+
+        $this->getJson('/api/_test/response')->assertStatus(202)->assertExactJson(['ok' => true]);
+    });
 });

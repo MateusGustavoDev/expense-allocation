@@ -27,6 +27,8 @@ it('issues a token for valid credentials', function () {
 });
 
 it('rejects invalid credentials without telling which field is wrong', function (string $email, string $password) {
+    // Debug desligado, como em produção: credencial errada é 422, não erro interno
+    config(['app.debug' => false]);
     apiUser();
 
     $this->postJson('/api/login', ['email' => $email, 'password' => $password])
