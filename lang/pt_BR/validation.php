@@ -214,6 +214,9 @@ return [
         'company_id' => 'empresa',
         'slug' => 'slug',
         'file' => 'arquivo',
+        // Autenticação
+        'email' => 'e-mail',
+        'device_name' => 'nome do dispositivo',
         'date_from' => 'data inicial',
         'date_to' => 'data final',
         'conversion_status' => 'status da conversão',

@@ -7,6 +7,9 @@ namespace App\Providers;
 use App\Contracts\ExchangeRateProvider;
 use App\Models\User;
 use App\Services\ExchangeRates\BcbPtaxProvider;
+use Dedoc\Scramble\Scramble;
+use Dedoc\Scramble\Support\Generator\OpenApi;
+use Dedoc\Scramble\Support\Generator\SecurityScheme;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Gate;
@@ -36,5 +39,10 @@ final class AppServiceProvider extends ServiceProvider
 
         // Documentação da API (/docs/api) pública em todos os ambientes: não expõe dados, só o contrato
         Gate::define('viewApiDocs', fn (?User $user = null): bool => true);
+
+        // Toda rota da documentação exige o token Bearer, exceto as marcadas com @unauthenticated (login)
+        Scramble::configure()->withDocumentTransformers(function (OpenApi $openApi): void {
+            $openApi->secure(SecurityScheme::http('bearer'));
+        });
     }
 }

@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 // Testes de Feature sobem a aplicação Laravel e rodam cada teste numa transação revertida ao final.
@@ -11,6 +13,15 @@ use Tests\TestCase;
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->in('Feature');
+
+// Rotas da API exigem token: os testes de regra entram autenticados. A autenticação em si é testada em Feature/Auth
+pest()->beforeEach(fn () => Sanctum::actingAs(User::factory()->create()))
+    ->in('Feature/Api');
+
+// Páginas da interface exigem sessão: os testes das telas entram logados
+pest()->beforeEach(function (): void {
+    $this->actingAs(User::factory()->create());
+})->in('Feature/Livewire', 'Feature/Ui');
 
 // Simula a API PTAX do Banco Central respondendo com uma cotação de venda do dia informado
 function fakePtax(float $rate, string $quotedOn): void
