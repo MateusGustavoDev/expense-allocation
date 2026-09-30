@@ -3,12 +3,14 @@
 # Sem filtro `paths:` de propósito: estes checks são exigidos pela branch protection,
 # e um check pulado fica eternamente "Expected", travando o merge.
 #
-# Sem trigger `push:`: main e staging só recebem código via PR, que já passou por aqui.
-# O deploy é feito pelo Railway ao detectar o merge (com "Wait for CI").
+# Trigger `push:` em main e staging: o "Wait for CI" do Railway espera os workflows do commit que vai para
+# deploy (o merge commit), e só enxerga workflows disparados por push. Também testa o código já mesclado.
 name: CI
 
 on:
   pull_request:
+    branches: [main, staging]
+  push:
     branches: [main, staging]
 
 concurrency:
@@ -21,6 +23,8 @@ permissions:
 jobs:
   source-branch:
     name: source branch
+    # Regra de PR: no push não há branch de origem. Job pulado não bloqueia o deploy no Railway
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
