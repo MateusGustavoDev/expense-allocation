@@ -28,7 +28,8 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
-<body class="min-h-screen">
+{{-- x-data no body: a página inteira é um escopo Alpine, então qualquer elemento pode usar x-on e $dispatch --}}
+<body class="min-h-screen" x-data>
     <a href="#conteudo" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-60 focus:rounded-lg focus:bg-ds-white focus:px-4 focus:py-2 focus:shadow-lg">
         Pular para o conteúdo
     </a>
@@ -73,6 +74,7 @@
     </div>
 
     <x-ui.toaster />
-    @livewireScripts
+    {{-- Livewire e Alpine vêm do app.js (ver resources/js/app.js); aqui só a configuração --}}
+    @livewireScriptConfig
 </body>
 </html>
