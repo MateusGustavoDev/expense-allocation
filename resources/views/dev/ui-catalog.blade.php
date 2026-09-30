@@ -240,10 +240,10 @@
             <x-slot:head>
                 <x-ui.table.head sortable="date" sorted-by="date" direction="desc">Data</x-ui.table.head>
                 <x-ui.table.head sortable="description">Despesa</x-ui.table.head>
-                <x-ui.table.head align="right">Valor original</x-ui.table.head>
-                <x-ui.table.head align="right">Valor em BRL</x-ui.table.head>
-                <x-ui.table.head>Status</x-ui.table.head>
-                <x-ui.table.head><span class="sr-only">Ações</span></x-ui.table.head>
+                <x-ui.table.head>Valor original</x-ui.table.head>
+                <x-ui.table.head>Valor em BRL</x-ui.table.head>
+                <x-ui.table.head align="center">Status</x-ui.table.head>
+                <x-ui.table.head align="center">Ações</x-ui.table.head>
             </x-slot:head>
 
             @foreach ($paginator as [$date, $description, $supplier, $original, $brl, $status])
@@ -255,8 +255,8 @@
                     </x-ui.table.cell>
                     <x-ui.table.cell numeric>{{ $original }}</x-ui.table.cell>
                     <x-ui.table.cell numeric @class(['font-semibold' => $brl])>{{ $brl ?? '—' }}</x-ui.table.cell>
-                    <x-ui.table.cell><x-ui.status-badge :status="$status" /></x-ui.table.cell>
-                    <x-ui.table.cell align="right">
+                    <x-ui.table.cell align="center"><x-ui.status-badge :status="$status" /></x-ui.table.cell>
+                    <x-ui.table.cell align="center">
                         <x-ui.dropdown>
                             <x-slot:trigger>
                                 <x-ui.button variant="ghost" size="sm" icon="ellipsis" icon-only aria-label="Ações de {{ $description }}" />
@@ -281,14 +281,14 @@
             <x-ui.table caption="Tabela vazia">
                 <x-slot:head>
                     <x-ui.table.head>Unidade</x-ui.table.head>
-                    <x-ui.table.head align="right">Total</x-ui.table.head>
+                    <x-ui.table.head>Total</x-ui.table.head>
                 </x-slot:head>
                 <x-ui.table.empty colspan="2" icon="search" title="Nenhum resultado" description="Nenhuma despesa corresponde aos filtros." />
             </x-ui.table>
             <x-ui.table caption="Tabela carregando">
                 <x-slot:head>
                     <x-ui.table.head>Unidade</x-ui.table.head>
-                    <x-ui.table.head align="right">Total</x-ui.table.head>
+                    <x-ui.table.head>Total</x-ui.table.head>
                 </x-slot:head>
                 <x-ui.table.loading colspan="2" rows="4" />
             </x-ui.table>

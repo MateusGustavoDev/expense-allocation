@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
-use App\Exceptions\ResourceInUseException;
+use App\Actions\Companies\DeleteCompany;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CompanyRequest;
 use App\Http\Resources\CompanyResource;
@@ -63,13 +63,9 @@ final class CompanyController extends Controller
      *
      * Empresas com unidades cadastradas não podem ser removidas.
      */
-    public function destroy(Company $company): Response
+    public function destroy(Company $company, DeleteCompany $deleteCompany): Response
     {
-        if ($company->units()->exists()) {
-            throw new ResourceInUseException('Não é possível excluir uma empresa com unidades cadastradas.');
-        }
-
-        $company->delete();
+        $deleteCompany->execute($company);
 
         return response()->noContent();
     }

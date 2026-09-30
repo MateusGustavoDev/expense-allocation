@@ -18,6 +18,8 @@ final class ListExpensesRequest extends FormRequest
     public function rules(): array
     {
         return [
+            // Busca na descrição e no fornecedor
+            'search' => ['nullable', 'string', 'max:100'],
             // Data inicial do período (inclusiva), AAAA-MM-DD
             'date_from' => ['nullable', 'date_format:Y-m-d'],
             // Data final do período (inclusiva), AAAA-MM-DD

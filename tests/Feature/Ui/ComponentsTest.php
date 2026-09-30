@@ -30,10 +30,32 @@ it('disables a loading button and marks it busy', function () {
         ->assertSee('animate-spin', false);
 });
 
-it('wires the Livewire loading state to the clicked action', function () {
-    $this->blade('<x-ui.button wire:click="save(1)" icon="check">Salvar</x-ui.button>')
+it('shows loading only on the button that fired the request', function () {
+    $this->blade('<x-ui.button wire:click="retry(1)" icon="refresh-cw">Tentar</x-ui.button>')
+        ->assertSee('data-loading:pointer-events-none', false)
+        ->assertSee('group-data-loading/button:block', false)
+        ->assertDontSee('wire:target', false);
+});
+
+it('covers the text with the spinner when the button has no icon', function () {
+    $this->blade('<x-ui.button wire:click="gotoPage(3)">3</x-ui.button>')
+        ->assertSee('<span class="group-data-loading/button:invisible">3</span>', false)
+        ->assertSee('absolute inset-0 hidden items-center justify-center group-data-loading/button:flex', false);
+});
+
+it('ties the loading state to an explicit wire:target', function () {
+    $this->blade('<x-ui.button type="submit" wire:target="save" icon="check">Salvar</x-ui.button>')
         ->assertSee('wire:loading.attr="disabled"', false)
         ->assertSee('wire:target="save"', false);
+});
+
+it('does not share the loading state between pagination buttons with the same call', function () {
+    $paginator = new LengthAwarePaginator(range(1, 15), 45, 15, 1);
+
+    // "Próxima" e "Página 2" chamam o mesmo gotoPage(2): um alvo por chamada deixaria os dois em loading
+    $this->blade('<x-ui.pagination :paginator="$paginator" livewire />', ['paginator' => $paginator])
+        ->assertSee('data-loading:pointer-events-none', false)
+        ->assertDontSee('wire:target', false);
 });
 
 it('requires an aria-label on icon-only buttons', function () {

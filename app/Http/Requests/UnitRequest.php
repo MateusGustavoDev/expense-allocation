@@ -4,42 +4,27 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
-use App\Http\Requests\Concerns\SquishesInput;
+use App\Models\Unit;
+use App\Validation\UnitRules;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 final class UnitRequest extends FormRequest
 {
-    use SquishesInput;
-
     /**
      * @return array<string, array<int, ValidationRule|string|\Stringable>>
      */
     public function rules(): array
     {
+        /** @var Unit|null $unit */
         $unit = $this->route('unit');
 
-        return [
-            'company_id' => ['required', 'integer', 'exists:companies,id'],
-            'name' => [
-                'required', 'string', 'max:120',
-                Rule::unique('units')->where('company_id', $this->integer('company_id'))->ignore($unit),
-            ],
-            // Opcional: quando ausente, é gerado a partir do nome. Referencia a unidade na importação por CSV.
-            'slug' => ['sometimes', 'required', 'string', 'max:120', 'alpha_dash', Rule::unique('units')->ignore($unit)],
-        ];
+        return UnitRules::rules($this->input('company_id'), $unit);
     }
 
     // Slug é opcional na entrada: quando ausente, é derivado do nome. Em ambos os casos é normalizado.
     protected function prepareForValidation(): void
     {
-        $this->squish('name');
-
-        $source = $this->filled('slug') ? $this->string('slug') : $this->string('name');
-
-        if ($source->isNotEmpty()) {
-            $this->merge(['slug' => $source->slug()->toString()]);
-        }
+        $this->replace(UnitRules::normalize($this->all()));
     }
 }

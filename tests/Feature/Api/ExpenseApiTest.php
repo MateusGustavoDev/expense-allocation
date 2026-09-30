@@ -227,3 +227,19 @@ it('filters expenses allocated to a unit', function () {
         ->assertJsonCount(1, 'data')
         ->assertJsonPath('data.0.id', $mine);
 });
+
+it('searches expenses by description or supplier', function () {
+    $crm = Expense::factory()->create(['description' => 'Licença CRM', 'supplier' => 'Fornecedor X']);
+    $aws = Expense::factory()->create(['description' => 'Hospedagem', 'supplier' => 'Amazon Web Services']);
+    Expense::factory()->create(['description' => 'Café', 'supplier' => 'Padaria']);
+
+    $this->getJson('/api/expenses?search=crm')->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $crm->id);
+    $this->getJson('/api/expenses?search=amazon')->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $aws->id);
+});
+
+it('treats LIKE wildcards typed in the search as literal characters', function () {
+    Expense::factory()->create(['description' => 'Desconto de 10%']);
+    Expense::factory()->create(['description' => 'Licença CRM']);
+
+    $this->getJson('/api/expenses?search='.urlencode('%'))->assertJsonCount(1, 'data');
+});

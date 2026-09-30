@@ -89,6 +89,7 @@ app/
 │   ├── Csv/CsvReader.php
 │   ├── Money/               # AllocationSplitter, CurrencyConverter, Decimal
 │   └── ExchangeRates/       # BcbPtaxProvider, ExchangeRates (cache)
+├── Support/                 # Utilitários de apresentação (Format)
 └── Validation/              # Regras compartilhadas entre API e CSV (ExpenseRules)
 lang/pt_BR/                  # Mensagens de validação em português e nomes dos campos
 database/
@@ -369,9 +370,11 @@ Convenções:
 - Props em kebab-case (`icon-only`). Tudo o que não é prop vai para o elemento nativo (`wire:model`, `wire:click`, `x-on:*`, `aria-*`, `type`).
 - Em campos, `class` vai para o **invólucro** (layout: `w-72`, `col-span-2`); aparência vem das props.
 - `name` dos campos vem do atributo ou do `wire:model`; o erro é lido de `$errors` por esse nome, com `aria-invalid` e `aria-describedby`.
-- Botão com `wire:click` ou `wire:target` mostra loading e fica desabilitado sozinho enquanto o Livewire processa a ação.
+- Botão com `wire:click` mostra loading e fica bloqueado só enquanto a requisição que **ele** disparou roda (atributo `data-loading` do Livewire, estilizado com `data-loading:` / `group-data-loading/button:`): botões com a mesma chamada, como "Próxima" e "Página 2", não entram em loading juntos. Com `wire:target` explícito, o loading segue a ação venha de onde vier (ex.: submit, cuja origem é o `<form>`).
 - Variante ou tamanho inválido lança exceção: erro de digitação aparece no desenvolvimento, não em produção.
 - Ícones Lucide pelo nome (`icon="plus"`), via `x-ui.icon`.
+- Tabelas: todas as colunas alinhadas à esquerda, inclusive valores (`numeric` só aplica algarismos de largura fixa). Exceção: colunas de ação e de badge (status, slug) usam `align="center"` no cabeçalho e na célula.
+- Ações da linha sempre num `x-ui.dropdown` aberto por botão `ellipsis` (`aria-label="Ações de {nome}"`), com ações destrutivas por último, após um separador e com `danger`.
 - Layout da aplicação em `resources/views/layouts/app.blade.php` (`layouts::app`, usado pelos componentes Livewire de página).
 
 Alpine e interatividade:
@@ -385,16 +388,24 @@ Alpine e interatividade:
 
 ### Componentes Livewire
 
-- Um componente por tela ou bloco com estado (`ExpenseForm`, `ExpenseList`, `CsvImport`, `UnitTotalsReport`).
-- O componente **só** orquestra: valida, chama a Action, atualiza o estado. Regra de negócio fica na Action.
+- Páginas são componentes Livewire em classe com sufixo `Page`, agrupados por domínio (`App\Livewire\Reports\UnitTotalsPage`, view em `resources/views/livewire/reports/unit-totals-page.blade.php`), registrados direto na rota (`Route::get('/reports', UnitTotalsPage::class)`) e com `#[Title]`.
+- O componente **só** orquestra: valida, chama a Action, atualiza o estado. Regra de negócio fica na Action — a página de relatório usa a mesma `GetUnitTotalsReport` da API.
+- Filtros e paginação ficam na URL com `#[Url]` (link compartilhável); valor inválido vindo da URL volta ao padrão no `mount()`.
+- Dados derivados com `#[Computed]` (≈ `useMemo`); invalide com `unset($this->propriedade)` quando a entrada muda.
 - Formulários com **Form Objects** (`Livewire\Form`).
-- Estado de carregamento com `wire:loading` / `wire:target`.
-- Use `wire:model` padrão (sincroniza no submit); `wire:model.live` só quando a UI precisa reagir a cada tecla (ex.: soma do rateio em tempo real).
+- `<form novalidate>`: a validação é a do servidor (mesmas regras da API, mensagens em português); a nativa do navegador bloquearia o submit antes.
+- Propriedade pública e método nunca com o mesmo nome (`$sortBy` + `sortBy()`): no navegador, `$wire.sortBy` devolve a propriedade e a ação deixa de existir. Use `#[Url(as: ...)]` se o nome da URL importar.
+- Estado de carregamento com `wire:loading` / `wire:target` (ex.: `wire:loading.class="opacity-60"` no conteúdo que recalcula).
+- Use `wire:model` padrão (sincroniza no submit); `wire:model.live` só quando a UI precisa reagir na hora (filtros, soma do rateio).
 - Interações puramente visuais (abrir modal, mostrar/ocultar) com **Alpine.js** no cliente — sem roundtrip ao servidor.
 - Comunicação entre componentes por eventos (`$this->dispatch()` + `#[On]`).
 - Propriedades públicas são enviadas ao navegador: nunca guarde dado sensível nelas, e trate-as como entrada do usuário (valide sempre).
+- Datas relativas ("hoje", "este mês") usam `config('app.business_timezone')` (America/Sao_Paulo); servidor e banco seguem em UTC.
 
----
+### Formatação para exibição
+
+- `App\Support\Format`: `money()` (`R$ 1.500,00`, `US$ 1.500,00`), `decimal()`, `percent()` (pontos-base → `31,9%`), `rate()` (cotação com 4 casas: `5,4123`) e `date()` (`01/09/2026`). Parte de inteiros e não depende da extensão intl.
+- Nas views: `@use('App\Support\Format')` e `{{ Format::money($cents) }}`. Nunca formate dinheiro com `number_format` sobre float.
 
 ## Testes
 
@@ -413,6 +424,7 @@ Padrões:
 - HTTP externo **sempre** falseado com `Http::fake()` — `Http::preventStrayRequests()` está ativo no `TestCase` e faz qualquer requisição não simulada falhar. Helpers `fakePtax()` e `fakePtaxDown()` em `tests/Pest.php`.
 - A fila roda em modo `sync` nos testes: quem não testa o job em si usa `Queue::fake()`.
 - Regras que dependem de "hoje" fixam o relógio com `$this->travelTo()`.
+- Componentes Livewire com `Livewire::test()` (`->set()`, `->assertSee()`, `->assertHasErrors()`) e `Livewire::withQueryParams()` para filtros da URL.
 - `Queue::fake()` para verificar dispatch; teste o Job chamando `handle()` diretamente para verificar comportamento.
 - Um comportamento por teste, nome descrevendo a regra: `it('keeps the expense when the exchange API is down')`.
 - Banco de testes MySQL (mesmo engine de produção), não SQLite.

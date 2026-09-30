@@ -15,7 +15,6 @@ use App\Http\Resources\ExpenseResource;
 use App\Http\Resources\ImportReportResource;
 use App\Models\Expense;
 use Dedoc\Scramble\Attributes\Group;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\UploadedFile;
@@ -30,13 +29,12 @@ final class ExpenseController extends Controller
      */
     public function index(ListExpensesRequest $request): AnonymousResourceCollection
     {
+        /** @var array{search?: ?string, date_from?: ?string, date_to?: ?string, currency?: ?string, conversion_status?: ?string, unit_id?: int|string|null} $filters */
+        $filters = $request->validated();
+
         $expenses = Expense::query()
             ->withCount('allocations')
-            ->when($request->date('date_from'), fn (Builder $query, $from) => $query->whereDate('date', '>=', $from))
-            ->when($request->date('date_to'), fn (Builder $query, $to) => $query->whereDate('date', '<=', $to))
-            ->when($request->string('currency')->toString(), fn (Builder $query, string $currency) => $query->where('currency', $currency))
-            ->when($request->string('conversion_status')->toString(), fn (Builder $query, string $status) => $query->where('conversion_status', $status))
-            ->when($request->integer('unit_id'), fn (Builder $query, int $unitId) => $query->whereHas('allocations', fn (Builder $allocations) => $allocations->where('unit_id', $unitId)))
+            ->filter($filters)
             ->orderByDesc('date')
             ->orderByDesc('id')
             ->paginate();
