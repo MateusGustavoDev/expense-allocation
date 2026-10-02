@@ -4,7 +4,11 @@
 x-php: &php
   build:
     context: .
-    target: base
+    target: development
+    args:
+      # uid/gid do usuário do host (Linux): quem roda "id -u" diferente de 1000 define USER_ID/GROUP_ID no .env
+      USER_ID: ${USER_ID:-1000}
+      GROUP_ID: ${GROUP_ID:-1000}
   image: expense-allocation-php
   volumes:
     - .:/var/www/html
