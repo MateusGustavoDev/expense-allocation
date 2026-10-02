@@ -26,6 +26,8 @@ docker compose exec app php artisan key:generate
 docker compose exec app php artisan migrate --seed
 ```
 
+No Linux, o container escreve no projeto com o uid `1000`. Se `id -u` mostrar outro valor, defina `USER_ID` e `GROUP_ID` no `.env` antes do `docker compose up`.
+
 Acesse **http://localhost:8000** e entre com `admin@example.com` / `password`. Esse usuário só é criado no ambiente local.
 
 Para ver a interface preenchida, carregue os dados de demonstração: um grupo com 3 empresas, 5 unidades e seis meses de despesas realistas (aluguéis, SaaS em dólar, contas, eventuais), rateadas pelo número de funcionários de cada unidade. As despesas passam pela mesma regra da API, e as em dólar são convertidas pelo worker com a cotação real de cada data.

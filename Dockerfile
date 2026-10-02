@@ -9,6 +9,21 @@ RUN install-php-extensions bcmath
 
 USER www-data
 
+# Desenvolvimento (compose): o código vem do host por volume. No Linux o volume preserva o uid do dono, então o
+# www-data precisa ter o mesmo uid do usuário do host para escrever em vendor/ e storage/. No Mac o Docker Desktop
+# ignora o dono dos arquivos montados e o uid tanto faz.
+FROM base AS development
+
+ARG USER_ID=1000
+ARG GROUP_ID=1000
+
+USER root
+
+RUN docker-php-serversideup-set-id www-data ${USER_ID}:${GROUP_ID} \
+    && docker-php-serversideup-set-file-permissions --owner ${USER_ID}:${GROUP_ID} --service nginx
+
+USER www-data
+
 # Dependências PHP de produção. Também alimentam o build dos assets: o app.js importa o Livewire de vendor/
 FROM base AS vendor
 
